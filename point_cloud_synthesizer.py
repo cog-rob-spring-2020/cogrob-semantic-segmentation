@@ -107,3 +107,4 @@ class PointCloudSynthesizer:
             self.output_folder, '{:0>5}.ply'.format(frame))
         )
         print(str(frame) + ": pt cloud saved")
+

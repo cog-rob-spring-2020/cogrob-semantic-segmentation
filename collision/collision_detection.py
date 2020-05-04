@@ -1,30 +1,46 @@
 import numpy as np
 
 
-def get_rot_center(alpha):
+# def get_rot_center(alpha):
+#     '''
+#     Calculate the rotation center of the vehicle
+#     Input: alpha is the servo angle (angle between front wheel and front
+#     (clockwise is positive, 0 is straight forward))
+#     Output: Rotation Center in Camera Frame
+#     '''
+#     if abs(alpha) < 0.01:
+#         return None
+
+#     car_uaw = 0.04  # y component of the Front wheel in camera Frame
+#     car_aw = -0.28  # y component of the rear wheel in camera Frame
+#     fw = car_uaw
+#     bw = car_aw
+
+#     x = -(bw-fw)/np.tan(alpha)
+#     y = bw
+#     return (x, y)
+
+def get_rot_center(rho):
     '''
     Calculate the rotation center of the vehicle
-    Input: alpha is the servo angle (angle between front wheel and front
-    (clockwise is positive, 0 is straight forward))
+    Input: rho is the curvature at current state, positive is right turning, negitive is left turning
     Output: Rotation Center in Camera Frame
     '''
-    if abs(alpha) < 0.01:
+    if abs(rho) < 0.01:
         return None
 
-    car_uaw = 0.04  # y component of the Front wheel in camera Frame
-    car_aw = -0.28  # y component of the rear wheel in camera Frame
-    fw = car_uaw
-    bw = car_aw
+    car_aw = -0.28
+    bw = car_aw # y component of the rear wheel in camera Frame
 
-    x = -(bw-fw)/np.tan(alpha)
+    x = 1/rho
     y = bw
-    return (x, y)
+    return (x,y)
 
 
-def get_distance(angle, obstacle, margin=0.5, noise_level=0):
+def get_distance(rho, obstacle, margin=0.5, noise_level=0):
     '''
     Calculate the minimum distance that the vehicle could move without collision
-    Input:  angle: servo angle
+    Input:  rho: curvature at current state, positive is right turning, negitive is left turning
             obstacle: lidar points list in Polar coordinates (camera frame)
                 [[beta1, r1], [beta2, r2]]
                 beta is the angle, r is the distance
@@ -37,7 +53,7 @@ def get_distance(angle, obstacle, margin=0.5, noise_level=0):
     beta = obstacle[:, 0]
     d = obstacle[:, 1]
 
-    center = get_rot_center(angle)
+    center = get_rot_center(rho)
     if not center:
         # The vehicle is moving forward
 
@@ -64,8 +80,8 @@ def get_distance(angle, obstacle, margin=0.5, noise_level=0):
     max_go_range = (np.pi-np.abs(np.arctan(y0/x0)))*r0
     # print 'max_go_range',max_go_range,'center',center
 
-    # direction=np.sign(angle)
-    if angle > 0:
+    # direction=np.sign(rho)
+    if rho > 0:
         # The vehicle is turning right
 
         rho0 = np.sqrt(x*x+y*y)

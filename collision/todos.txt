@@ -1,8 +1,20 @@
+Shangjie's Notes
+1) Call 'get_collision' function in collision_detection.py to obtain the possible collision distance for all object.
+2) What this function is required:
+	a depth image: distance of pixel (height, width) to camera (see documentation in 'collision_detection.py' for details)
+	a segmentation image: segmentation result of the image
+	future trajectory of the car, represented by a list of waypoints. waypoints is represented by position in world frame, orientation, and curvature. (see documentation in 'collision_detection.py' for details)
+3) What this function will return (see documentation in 'collision_detection.py' for details):
+	a 2D ndarray stored the collision distance for all pixels in the input image
+4) I will finish implementing this function by Saturday
+
+
+
 Charles' TODOs:
-1) Figure out a way to downsample images before constructing point clouds
+1) Figure out a way to downsample images before constructing point clouds (see shangjie's note above)
 2) Integrate Shangjie's approach: ask Shangjie to change code to accept (X, Y, Z)
-    and arbitrary angle
+    and arbitrary angle (see shangjie's note above) (see shangjie's note above)
 3) Pipeline: For each waypoint in trajectory:
     - Translate point cloud to waypoint origin (rotating would be expensive)
     - Use Shangjie's code to find distance to collision at each waypoint
-    - Extract earliest distance to collision, report this as the warning
+    - Extract earliest distance to collision, report this as the warning (will be done by shangjie)

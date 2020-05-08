@@ -1,6 +1,7 @@
 import numpy as np
 from collision.utils import *
 
+
 def get_collision(depth_image, seg_image, trajectory):
     '''
     Interface function of collision detection
@@ -12,8 +13,6 @@ def get_collision(depth_image, seg_image, trajectory):
             y: y component of car position in world frame
             theta: orientation of car in world frame
                      theta=0 is x-axis (world frame), theta increase counterclockwise
-            rho: Curvature of at (x, y), assume the curvature is constant until next trajectory point (during movement from (x_t, y_t) to (x_t+1, y_t+1))
-                The curvature is positive when turning right, negative when turning left (TBD) 
     Output:
         collision_image: 2D ndarray, collision distance represent in image
         collision_image[height, width] = distance to collision on this pixel (inf if the car will not collide to this pixel)
@@ -26,6 +25,9 @@ def get_collision(depth_image, seg_image, trajectory):
     return get_distance(objects)
 
     
+    pass
+
+def get_collision_point_cloud(point_cloud, trajectory):
     pass
 
 if __name__ == '__main__':

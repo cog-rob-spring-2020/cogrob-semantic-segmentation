@@ -11,6 +11,8 @@ import sys
 import copy
 import time
 
+import numpy as np
+
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
         sys.version_info.major,
@@ -53,7 +55,7 @@ class BackseatDriver:
     Finally, the BackseatDriver exposes a callback `get_safety_estimate` that
     can be registered with `carla.World.on_tick`. When called, the
     `get_safety_estimate` function will print a safety report and return the
-    time until collision (which might be `float('inf')` if no collision is
+    distance until collision (which might be `float('inf')` if no collision is
     forseen).
     '''
 
@@ -74,9 +76,6 @@ class BackseatDriver:
         @param hazard_labels: a list of integers describing semantic
                               segmentation labels to avoid hitting (e.g.
                               other cars, pedestrians).
-        @param update_rate: the desired rate at which BackseatDriver should
-                            publish its estimate of time-to-collision (in Hz).
-                            Defaults to 10 Hz.
         @param horizon: the maximum distance from the camera that will checked
                         for collision (in km). This saves lots of computation
                         by avoiding checking for collision with the sky.
@@ -100,13 +99,6 @@ class BackseatDriver:
         self.horizon = horizon
         # Save debug status
         self.debug = debug
-
-        # Convert the update rate (Hz) to an update period (s)
-        self.update_period = 1.0/update_rate
-
-        # This variable is used to signal that the asynchrounous safety
-        # monitoring coroutine should terminate
-        self.running = True
 
     def log(self, message):
         '''Logs a message to the console if debug logging is enabled.
@@ -276,7 +268,21 @@ class BackseatDriver:
                 distance_to_collision = get_distance(alpha, points)
 
                 # If collision occurs before next waypoint, raise the alarm
+                if i < self.trajectory.shape[0] - 1:
+                    next_x = self.trajectory[i + 1, 1]
+                    next_y = self.trajectory[i + 1, 2]
+                    distance_to_next_waypoint = np.sqrt((next_x - x) ** 2 +
+                                                        (next_y - y) ** 2)
+
+                    if distance_to_collision < distance_to_next_waypoint:
+                        self.log("WARNING: Collision predicted. Distance: " +
+                                 str(distance_to_collision))
+                        break
+
+                else:  # if we're on the last waypoint, raise the alarm
+                    self.log("WARNING: Collision predicted. Distance: " +
+                             str(distance_to_collision))
 
                 #  Otherwise, continue to next waypoint.
 
-        raise NotImplementedError()
+        # Nothing to return right now.

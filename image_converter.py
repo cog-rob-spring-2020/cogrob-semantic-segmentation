@@ -4,6 +4,10 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
+# Modifications to depth_to_local_point_cloud and PointCloud.offset_all_points
+# were made by Charles Dawson (cbd@mit.edu) and
+# are also released under the MIT license
+
 """
 Handy conversions for CARLA images.
 
@@ -100,6 +104,19 @@ class PointCloud(SensorData):
     def apply_transform(self, transformation):
         """Modify the PointCloud instance transforming its points"""
         self._array = transformation.transform_points(self._array)
+
+    def offset_then_rotate(self, x, y, theta):
+        """Offset all points so that the point (x, y) -> (0, 0), then rotate
+        by theta around the +z axis.
+
+        Does not modify this point cloud, but returns the transformed points.
+        """
+        offset_points = self._array - [x, y, 0]
+        rotation_matrix = numpy.array(
+            [[numpy.cos(theta), -numpy.sin(theta), 0],
+             [numpy.sin(theta), numpy.cos(theta),  0],
+             [0,                0,                 1]])
+        return rotation_matrix.dot(offset_points.T)
 
     def save_to_disk(self, filename):
         """Save this point-cloud to disk as PLY format."""
@@ -255,29 +272,46 @@ def depth_to_logarithmic_grayscale(image):
     return numpy.repeat(logdepth[:, :, numpy.newaxis], 3, axis=2)
 
 
-def depth_to_local_point_cloud(image, color=None, max_depth=0.9):
+def depth_to_local_point_cloud(image, color=None, max_depth=0.9,
+                               sampling_rate=1, hazard_labels=None):
     """
     Convert an image containing CARLA encoded depth-map to a 2D array
     containing the 3D position (relative to the camera) of each pixel
     and its corresponding RGB color of an array.
     "max_depth" is used to omit the points that are far enough.
+
+    @param sampling_rate: an integer indicating how much to downscale the
+                          image and color map. 1 keeps the same resolution,
+                          higher numbers reduce the resolution. Must be
+                          greater than or equal to 1
+    @param hazard_labels: a list of integers that are marked as hazards. The
+                          returned point cloud will only contain hazard points.
     """
     far = 1000.0  # max depth in meters.
     normalized_depth = depth_to_array(image)
 
+    # resize images
+    assert(sampling_rate >= 1)
+    if sampling_rate > 1:
+        normalized_depth = normalized_depth[::sampling_rate, ::sampling_rate]
+        color = color[::sampling_rate, ::sampling_rate, :]
+
+    width = normalized_depth.shape[1]
+    height = normalized_depth.shape[0]
+
     # (Intrinsic) K Matrix
     k = numpy.identity(3)
-    k[0, 2] = image.width / 2.0
-    k[1, 2] = image.height / 2.0
-    k[0, 0] = k[1, 1] = image.width / \
+    k[0, 2] = width / 2.0
+    k[1, 2] = height / 2.0
+    k[0, 0] = k[1, 1] = width / \
         (2.0 * math.tan(image.fov * math.pi / 360.0))
 
     # 2d pixel coordinates
-    pixel_length = image.width * image.height
-    u_coord = repmat(numpy.r_[image.width - 1:-1:-1],
-                     image.height, 1).reshape(pixel_length)
-    v_coord = repmat(numpy.c_[image.height - 1:-1:-1],
-                     1, image.width).reshape(pixel_length)
+    pixel_length = width * height
+    u_coord = repmat(numpy.r_[width - 1:-1:-1],
+                     height, 1).reshape(pixel_length)
+    v_coord = repmat(numpy.c_[height - 1:-1:-1],
+                     1, width).reshape(pixel_length)
     if color is not None:
         color = color.reshape(pixel_length, 3)
     normalized_depth = numpy.reshape(normalized_depth, pixel_length)
@@ -290,6 +324,16 @@ def depth_to_local_point_cloud(image, color=None, max_depth=0.9):
     v_coord = numpy.delete(v_coord, max_depth_indexes)
     if color is not None:
         color = numpy.delete(color, max_depth_indexes, axis=0)
+
+        # Also delete pixels that are not marked as hazards
+        if hazard_labels:
+            not_hazards = numpy.isin(color[:, :, 0],
+                                     hazard_labels,
+                                     invert=True)
+            color = numpy.delete(color, not_hazards, axis=0)
+            normalized_depth = numpy.delete(normalized_depth, not_hazards)
+            u_coord = numpy.delete(u_coord, not_hazards)
+            v_coord = numpy.delete(v_coord, not_hazards)
 
     # pd2 = [u,v,1]
     p2d = numpy.array([u_coord, v_coord, numpy.ones_like(u_coord)])

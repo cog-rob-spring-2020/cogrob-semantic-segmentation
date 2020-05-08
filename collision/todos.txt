@@ -1,0 +1,8 @@
+Charles' TODOs:
+1) Figure out a way to downsample images before constructing point clouds
+2) Integrate Shangjie's approach: ask Shangjie to change code to accept (X, Y, Z)
+    and arbitrary angle
+3) Pipeline: For each waypoint in trajectory:
+    - Translate point cloud to waypoint origin (rotating would be expensive)
+    - Use Shangjie's code to find distance to collision at each waypoint
+    - Extract earliest distance to collision, report this as the warning

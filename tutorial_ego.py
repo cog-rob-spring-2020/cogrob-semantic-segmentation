@@ -17,6 +17,7 @@ import argparse
 import logging
 import random
 
+
 def main():
     argparser = argparse.ArgumentParser(
         description=__doc__)
@@ -33,7 +34,8 @@ def main():
         help='TCP port to listen to (default: 2000)')
     args = argparser.parse_args()
 
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s', level=logging.INFO)
 
     client = carla.Client(args.host, args.port)
     client.set_timeout(10.0)
@@ -61,12 +63,13 @@ def main():
         # --------------
         # Spawn ego vehicle
         # --------------
-        #"""
+        # """
         ego_bp = world.get_blueprint_library().find('vehicle.tesla.model3')
-        ego_bp.set_attribute('role_name','ego')
+        ego_bp.set_attribute('role_name', 'ego')
         print('\nEgo role_name is set')
-        ego_color = random.choice(ego_bp.get_attribute('color').recommended_values)
-        ego_bp.set_attribute('color',ego_color)
+        ego_color = random.choice(
+            ego_bp.get_attribute('color').recommended_values)
+        ego_bp.set_attribute('color', ego_color)
         print('\nEgo color is set')
 
         spawn_points = world.get_map().get_spawn_points()
@@ -75,46 +78,49 @@ def main():
         if 0 < number_of_spawn_points:
             random.shuffle(spawn_points)
             ego_transform = spawn_points[0]
-            ego_vehicle = world.spawn_actor(ego_bp,ego_transform)
+            ego_vehicle = world.spawn_actor(ego_bp, ego_transform)
             print('\nEgo is spawned')
-        else: 
+        else:
             logging.warning('Could not found any spawn points')
-        #"""
+        # """
 
         # --------------
-        # Add a RGB camera sensor to ego vehicle. 
+        # Add a RGB camera sensor to ego vehicle.
         # --------------
-        #"""
+        # """
         cam_bp = None
         cam_bp = world.get_blueprint_library().find('sensor.camera.rgb')
-        cam_bp.set_attribute("image_size_x",str(1920))
-        cam_bp.set_attribute("image_size_y",str(1080))
-        cam_bp.set_attribute("fov",str(105))
-        cam_location = carla.Location(2,0,1)
-        cam_rotation = carla.Rotation(-10,180,0)
-        cam_transform = carla.Transform(cam_location,cam_rotation)
-        ego_cam = world.spawn_actor(cam_bp,cam_transform,attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
-        ego_cam.listen(lambda image: image.save_to_disk('training_data/train_images/%.6d.png' % image.frame))
-        #"""
+        cam_bp.set_attribute("image_size_x", str(1920))
+        cam_bp.set_attribute("image_size_y", str(1080))
+        cam_bp.set_attribute("fov", str(105))
+        cam_location = carla.Location(2, 0, 1)
+        cam_rotation = carla.Rotation(-10, 180, 0)
+        cam_transform = carla.Transform(cam_location, cam_rotation)
+        ego_cam = world.spawn_actor(
+            cam_bp, cam_transform, attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
+        ego_cam.listen(lambda image: image.save_to_disk(
+            'training_data/train_images/%.6d.png' % image.frame))
+        # """
 
         # --------------
-        # Add a depth camera sensor to ego vehicle. 
+        # Add a depth camera sensor to ego vehicle.
         # --------------
-        #"""
+        # """
         depth_bp = None
         depth_bp = world.get_blueprint_library().find('sensor.camera.depth')
-        depth_bp.set_attribute("image_size_x",str(1920))
-        depth_bp.set_attribute("image_size_y",str(1080))
-        depth_bp.set_attribute("fov",str(105))
-        depth_location = carla.Location(2,0,1)
-        depth_rotation = carla.Rotation(-10,180,0)
+        depth_bp.set_attribute("image_size_x", str(1920))
+        depth_bp.set_attribute("image_size_y", str(1080))
+        depth_bp.set_attribute("fov", str(105))
+        depth_location = carla.Location(2, 0, 1)
+        depth_rotation = carla.Rotation(-10, 180, 0)
         depth_transform = carla.Transform(depth_location, depth_rotation)
-        ego_depth = world.spawn_actor(depth_bp, depth_transform, attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
+        ego_depth = world.spawn_actor(
+            depth_bp, depth_transform, attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
         # ego_depth.listen(lambda image: image.save_to_disk('tutorial/depth_output/%.6d.png' % image.frame))
-        #"""
+        # """
 
         # --------------
-        # Add collision sensor to ego vehicle. 
+        # Add collision sensor to ego vehicle.
         # --------------
         """
         col_bp = world.get_blueprint_library().find('sensor.other.collision')
@@ -128,7 +134,7 @@ def main():
         """
 
         # --------------
-        # Add Lane invasion sensor to ego vehicle. 
+        # Add Lane invasion sensor to ego vehicle.
         # --------------
         """
         lane_bp = world.get_blueprint_library().find('sensor.other.lane_invasion')
@@ -142,7 +148,7 @@ def main():
         """
 
         # --------------
-        # Add Obstacle sensor to ego vehicle. 
+        # Add Obstacle sensor to ego vehicle.
         # --------------
         """
         obs_bp = world.get_blueprint_library().find('sensor.other.obstacle')
@@ -157,7 +163,7 @@ def main():
         """
 
         # --------------
-        # Add GNSS sensor to ego vehicle. 
+        # Add GNSS sensor to ego vehicle.
         # --------------
         """
         gnss_bp = world.get_blueprint_library().find('sensor.other.gnss')
@@ -172,7 +178,7 @@ def main():
         """
 
         # --------------
-        # Add IMU sensor to ego vehicle. 
+        # Add IMU sensor to ego vehicle.
         # --------------
         """
         imu_bp = world.get_blueprint_library().find('sensor.other.imu')
@@ -195,27 +201,30 @@ def main():
         spectator.set_transform(ego_vehicle.get_transform())
         """
 
-	# --------------
-	# Add a new semantic segmentation camera to my ego
-	# --------------
+        # --------------
+        # Add a new semantic segmentation camera to my ego
+        # --------------
         sem_cam = None
-        sem_bp = world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
-        sem_bp.set_attribute("image_size_x",str(1920))
-        sem_bp.set_attribute("image_size_y",str(1080))
-        sem_bp.set_attribute("fov",str(105))
-        sem_location = carla.Location(2,0,1)
-        sem_rotation = carla.Rotation(-10,180,0)
-        sem_transform = carla.Transform(sem_location,sem_rotation)
-        sem_cam = world.spawn_actor(sem_bp,sem_transform,attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
+        sem_bp = world.get_blueprint_library().find(
+            'sensor.camera.semantic_segmentation')
+        sem_bp.set_attribute("image_size_x", str(1920))
+        sem_bp.set_attribute("image_size_y", str(1080))
+        sem_bp.set_attribute("fov", str(105))
+        sem_location = carla.Location(2, 0, 1)
+        sem_rotation = carla.Rotation(-10, 180, 0)
+        sem_transform = carla.Transform(sem_location, sem_rotation)
+        sem_cam = world.spawn_actor(
+            sem_bp, sem_transform, attach_to=ego_vehicle, attachment_type=carla.AttachmentType.SpringArm)
         # This time, a color converter is applied to the image, to get the semantic segmentation view
-        sem_cam.listen(lambda image: image.save_to_disk('training_data/train_labels/%.6d.png' % image.frame,carla.ColorConverter.CityScapesPalette))
+        sem_cam.listen(lambda image: image.save_to_disk(
+            'training_data/train_labels/%.6d.png' % image.frame, carla.ColorConverter.CityScapesPalette))
 
         # --------------
         # Enable autopilot for ego vehicle
         # --------------
-        #"""
+        # """
         ego_vehicle.set_autopilot(True)
-        #"""
+        # """
 
         # --------------
         # Game loop. Prevents the script from finishing.
@@ -254,6 +263,7 @@ def main():
                 ego_depth.stop()
                 ego_depth.destroy()
             ego_vehicle.destroy()
+
 
 if __name__ == '__main__':
 

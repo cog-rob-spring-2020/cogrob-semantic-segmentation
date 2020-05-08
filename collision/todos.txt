@@ -6,15 +6,15 @@ Shangjie's Notes
 	future trajectory of the car, represented by a list of waypoints. waypoints is represented by position in world frame, orientation, and curvature. (see documentation in 'collision_detection.py' for details)
 3) What this function will return (see documentation in 'collision_detection.py' for details):
 	a 2D ndarray stored the collision distance for all pixels in the input image
-4) I will finish implementing this function by Saturday
+4) I will finish implementing the interface function by Saturday
 
 
 
 Charles' TODOs:
 1) Figure out a way to downsample images before constructing point clouds (see shangjie's note above)
 2) Integrate Shangjie's approach: ask Shangjie to change code to accept (X, Y, Z)
-    and arbitrary angle (see shangjie's note above) (see shangjie's note above)
+    and arbitrary angle (see shangjie's note above) (will be done by shangjie, see shangjie's note above)
 3) Pipeline: For each waypoint in trajectory:
-    - Translate point cloud to waypoint origin (rotating would be expensive)
-    - Use Shangjie's code to find distance to collision at each waypoint
+    - Translate point cloud to waypoint origin (rotating would be expensive) (maybe we don't need this step, the interface function takes waypoints in world frame see notes above)
+    - Use Shangjie's code to find distance to collision at each waypoint (will be done by shangjie)
     - Extract earliest distance to collision, report this as the warning (will be done by shangjie)

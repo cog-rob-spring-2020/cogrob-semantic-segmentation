@@ -15,8 +15,8 @@ def get_collision(depth_image, seg_image, trajectory):
             rho: Curvature of at (x, y), assume the curvature is constant until next trajectory point (during movement from (x_t, y_t) to (x_t+1, y_t+1))
                 The curvature is positive when turning right, negative when turning left (TBD) 
     Output:
-        collision: 2D ndarray, collision distance represent in image
-        collision[height, width] = distance to collision on this pixel (inf if the car will not collide to this pixel)
+        collision_image: 2D ndarray, collision distance represent in image
+        collision_image[height, width] = distance to collision on this pixel (inf if the car will not collide to this pixel)
     '''
 
     #This function is currently not working. I will finish it by Saturday -shangjie

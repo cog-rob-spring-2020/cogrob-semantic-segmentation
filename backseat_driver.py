@@ -27,14 +27,14 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
-from collision_detection import get_distance
+from collision.utils import get_distance_3D_baseline
 
 
 class BackseatDriver:
     '''The BackseatDriver collects semantic segmentation, depth, and
     planned trajectory data at whatever rate it is published, then exposes a
     callback for querying its own estimate of the safety of planned
-    trajectories (i.e. if the planned trajectory will result in a future 
+    trajectories (i.e. if the planned trajectory will result in a future
     collision and if so, how long until that predicted collision) at a constant
     rate.
 
@@ -265,7 +265,7 @@ class BackseatDriver:
                 points = point_cloud.offset_then_rotate(x, y, theta)
 
                 # Call Shangjie's code for collision checking
-                distance_to_collision = get_distance(alpha, points)
+                distance_to_collision = get_distance_3D_baseline(alpha, points)
 
                 # If collision occurs before next waypoint, raise the alarm
                 if i < self.trajectory.shape[0] - 1:

@@ -19,6 +19,7 @@ import numpy as np
 #     y = bw
 #     return (x, y)
 
+
 def get_rot_center(rho):
     '''
     Calculate the rotation center of the vehicle
@@ -29,11 +30,11 @@ def get_rot_center(rho):
         return None
 
     car_aw = -0.28
-    bw = car_aw # y component of the rear wheel in camera Frame
+    bw = car_aw  # y component of the rear wheel in camera Frame
 
     x = 1/rho
     y = bw
-    return (x,y)
+    return (x, y)
 
 
 def get_distance(rho, obstacle, margin=0.5, noise_level=0):
@@ -134,11 +135,52 @@ def get_distance(rho, obstacle, margin=0.5, noise_level=0):
     # return the minimum
     return min(distance_list[min(noise_level, len(distance_list)-1)], max_go_range)
 
-def segment(depth_image,seg_image):
+
+def get_distance_3D_baseline(rho, obstacle, margin=0.5, noise_level=0):
+    '''
+    Calculate the minimum distance that the vehicle could move without
+    causing a collision with specified obstacles. A very simple function
+    that does not account for vehicle turning. To be used until the proper
+    collision checking code is complete.
+
+    The vehicle is assumed to be moving forward along the local x axis.
+
+    Input:  rho: curvature at current state, positive is right turning,
+                 negative is left turning.
+            obstacle: a point cloud representing obstacles, with points encoded
+                      as 3D coordinates in a N_points x 3 np array
+                          [[x1, y1, z1], [x2, y2, z2], ...]
+            margin: safety margin of the object. The vehicle will be considered
+                    as in collision if it intersects the margin region (a disk
+                    with margin as radius) of any point
+            noise_level: number of lidar point that will be considered as
+                         noise,  set to 0 as default
+    Output: Minimum distance that the vehicle could move without collision
+    '''
+
+    # Check for collision along the
+    # local x axis (pointing forward)
+    x = obstacle[:, 0]
+    y = obstacle[:, 1]
+    z = obstacle[:, 2]
+    # Extract the indices of points where collision might occur.
+    crossing = np.where((np.abs(y) > margin) & (np.abs(z) > margin), 0, 1)
+    collide_indx = np.where(crossing == 1)
+    # If no collisions, return infinity
+    if len(collide_indx[0]) == 0:
+        return np.inf
+    # Otherwise, find the minimum x at which a collision occurs, and return
+    # that as our "distance to collision"
+    return np.min(x[collide_indx])
+
+
+def segment(depth_image, seg_image):
     pass
+
 
 def get_bounding_bos(instance_list):
     pass
+
 
 if __name__ == '__main__':
     print(get_rot_center(3.14/6))

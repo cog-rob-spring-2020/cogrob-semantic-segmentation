@@ -276,7 +276,8 @@ class BackseatDriver:
 
                     if distance_to_collision < distance_to_next_waypoint:
                         self.log("WARNING: Collision predicted. Distance: " +
-                                 str(distance_to_collision))
+                                 str(distance_to_collision) + "from waypoint "
+                                 + str(i))
                         break
 
                 else:  # if we're on the last waypoint, raise the alarm

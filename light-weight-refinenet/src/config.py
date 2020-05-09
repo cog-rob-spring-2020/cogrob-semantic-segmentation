@@ -3,16 +3,26 @@ import numpy as np
 # DATASET PARAMETERS
 TRAIN_DIR = '/opt/carla/PythonAPI/carla_scripts/training_data'
 VAL_DIR = TRAIN_DIR
-TRAIN_LIST = ['/opt/carla/PythonAPI/carla_scripts/training_data/train.nyu'] * 3
+#TRAIN_DIR = '/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet/data'
+#VAL_DIR = TRAIN_DIR
+
+#TRAIN_LIST = ['/opt/carla/PythonAPI/carla_scripts/training_data/test_train.nyu']
+#VAL_LIST = ['/opt/carla/PythonAPI/carla_scripts/training_data/test_val.nyu']
+
+TRAIN_LIST = ['/opt/carla/PythonAPI/carla_scripts/training_data/train.nyu'] * 3 
 VAL_LIST = ['/opt/carla/PythonAPI/carla_scripts/training_data/val.nyu'] * 3
+#TRAIN_LIST = ['/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet/data/train.nyu']
+#VAL_LIST = ['/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet/data/val.nyu']
+
 SHORTER_SIDE = [350] * 3
 CROP_SIZE = [500] * 3
+
 NORMALISE_PARAMS = [1./255, # SCALE
                     np.array([0.485, 0.456, 0.406]).reshape((1, 1, 3)), # MEAN
                     np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3))] # STD
-BATCH_SIZE = [6] * 3
+BATCH_SIZE = [1] * 3
 NUM_WORKERS = 16
-NUM_CLASSES = [40] * 3
+NUM_CLASSES = [255] * 3
 LOW_SCALE = [0.5] * 3
 HIGH_SCALE = [2.0] * 3
 IGNORE_LABEL = 255

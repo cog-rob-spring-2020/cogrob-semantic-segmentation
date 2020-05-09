@@ -5,3 +5,7 @@ tutorial_pt_cloud
 __pycache__
 # Ignore all training data
 *.png
+training_data/mathcing_train_labels_copy.zip
+training_data/ziqDkHPY
+training_data/ziuegZua
+light-weight-refinenet/data/*

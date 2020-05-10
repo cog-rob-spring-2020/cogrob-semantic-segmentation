@@ -107,7 +107,7 @@ class BackseatDriver:
         # Save the hazard labels
         self.hazard_labels = hazard_labels
         # Save the horizon
-        self.horizon = horizon
+        self.max_depth = horizon
         # Save debug status
         self.debug = debug
 
@@ -167,7 +167,7 @@ class BackseatDriver:
         # Save the depth data along with its frame
         self.semantic_data[image_data.frame] = semantic_data
         self.log("Received semantic data for frame: " +
-                 str(semantic_data.frame))
+                 str(image_data.frame))
 
     def update_planned_trajectory(self, trajectory):
         ''' "Files a flight plan" by telling the backseat driver what

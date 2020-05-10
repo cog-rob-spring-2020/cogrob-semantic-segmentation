@@ -29,7 +29,10 @@ from image_converter import (
 
 from collision_detection import get_collision
 
-# TODO: import refinenet
+sys.path += [
+  "/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet"
+]
+from RefineNet import RefineNet
 
 
 class BackseatDriver:

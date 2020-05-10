@@ -173,13 +173,11 @@ def get_collision2(depth_image, seg_image, trajectory):
 # The following codes is only used for plotting and debugging
 
 
-def plot_pose(p):
+def plot_pose(p, l=0.3):
 
     x, y, theta = p[:3]
 
     plt.plot(x, y, 'k.', markersize=10)
-
-    l = 0.3
 
     x1 = l*np.cos(theta)+x
     y1 = l*np.sin(theta)+y
@@ -187,12 +185,12 @@ def plot_pose(p):
     plt.plot([x, x1], [y, y1], '-b')
 
 
-def plot_curve(p1, p2):
+def plot_curve(p1, p2, param='-r'):
     x1, y1, theta1, rho = p1
     x2, y2, theta2, _ = p2
 
     if abs(rho) < 0.001:
-        plt.plot([x1, x2], [y1, y2], '-r')
+        plt.plot([x1, x2], [y1, y2], param)
     else:
         r = 1./rho
         xc, yc = np.cross([np.cos(theta1), np.sin(theta1), 0], [
@@ -216,7 +214,80 @@ def plot_curve(p1, p2):
             dalpha = np.linspace(0., alpha2-alpha1, num=10)
 
         plt.plot(np.cos(alpha1+dalpha)*abs(r)+xc,
-                 np.sin(alpha1+dalpha)*abs(r)+yc, '-r')
+                 np.sin(alpha1+dalpha)*abs(r)+yc, param)
+
+
+def fill_curve(p1, p2, p3, p4):
+    x1, y1, theta1, rho = p1
+    x2, y2, theta2, _ = p2
+
+    pl1 = []
+    if abs(rho) < 0.001:
+        #plt.plot([x1, x2], [y1, y2], param)
+        pl1 += [[x1, y1], [x2, y2]]
+    else:
+        r = 1./rho
+        xc, yc = np.cross([np.cos(theta1), np.sin(theta1), 0], [
+                          0, 0, 1.])[:2]*r + np.array([x1, y1])
+        # print xc,yc
+        # plt.plot(xc,yc,'o')
+        # d = np.sqrt((y2-y1)**2+(x2-x1)**2)
+        # dtheta = 2*np.asin(d*rho/2)
+
+        alpha1 = np.arctan2(y1-yc, x1-xc)
+        alpha2 = np.arctan2(y2-yc, x2-xc)
+        # print alpha1,alpha2
+        if r > 0:
+            if alpha2 > alpha1:
+                alpha2 -= 2*np.pi
+
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
+        else:
+            if alpha1 > alpha2:
+                alpha1 -= 2*np.pi
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
+
+        # plt.plot(np.cos(alpha1+dalpha)*abs(r)+xc,
+        #          np.sin(alpha1+dalpha)*abs(r)+yc, param)
+        pl1 += [[np.cos(alpha1+da)*abs(r)+xc, np.sin(alpha1+da)*abs(r)+yc]
+                for da in dalpha]
+
+    x1, y1, theta1, rho = p3
+    x2, y2, theta2, _ = p4
+
+    pl2 = []
+    if abs(rho) < 0.001:
+        #plt.plot([x1, x2], [y1, y2], param)
+        pl2 += [[x1, y1], [x2, y2]]
+    else:
+        r = 1./rho
+        xc, yc = np.cross([np.cos(theta1), np.sin(theta1), 0], [
+                          0, 0, 1.])[:2]*r + np.array([x1, y1])
+        # print xc,yc
+        # plt.plot(xc,yc,'o')
+        # d = np.sqrt((y2-y1)**2+(x2-x1)**2)
+        # dtheta = 2*np.asin(d*rho/2)
+
+        alpha1 = np.arctan2(y1-yc, x1-xc)
+        alpha2 = np.arctan2(y2-yc, x2-xc)
+        # print alpha1,alpha2
+        if r > 0:
+            if alpha2 > alpha1:
+                alpha2 -= 2*np.pi
+
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
+        else:
+            if alpha1 > alpha2:
+                alpha1 -= 2*np.pi
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
+
+        # plt.plot(np.cos(alpha1+dalpha)*abs(r)+xc,
+        #          np.sin(alpha1+dalpha)*abs(r)+yc, param)
+        pl2 += [[np.cos(alpha1+da)*abs(r)+xc, np.sin(alpha1+da)*abs(r)+yc]
+                for da in dalpha]
+
+    pl = np.array(pl1+pl2[::-1])
+    plt.fill(pl[:, 0], pl[:, 1], color='salmon')
 
 
 def plot_trajectory(traj):
@@ -229,9 +300,93 @@ def plot_trajectory(traj):
     pass
 
 
+def plot_margin_trajectory(traj, m=0.3):
+    old_traj = traj
+    new_traj = []
+    for p in traj:
+        x, y = p[:2]
+        theta = p[2]
+        dx, dy = np.cross([np.cos(theta)*m, np.sin(theta)*m, 0], [0, 0, 1])[:2]
+        x += dx
+        y += dy
+
+        rho = 1./(1./p[3] - m) if abs(p[3]) > 0.001 else p[3]
+        # print p[3], rho
+        # rho = p[3]
+        new_traj.append([x, y, theta, rho])
+    traj = new_traj
+
+    for p1, p2 in zip(traj, traj[1:]):
+        plot_curve(p1, p2, param=':r')
+
+    m = -m
+    new_traj = []
+    traj = old_traj
+    for p in traj:
+        x, y = p[:2]
+        theta = p[2]
+        dx, dy = np.cross([np.cos(theta)*m, np.sin(theta)*m, 0], [0, 0, 1])[:2]
+        x += dx
+        y += dy
+
+        rho = 1./(1./p[3] - m) if abs(p[3]) > 0.001 else p[3]
+        # print p[3], rho
+        # rho = p[3]
+        new_traj.append([x, y, theta, rho])
+    traj = new_traj
+
+    for p1, p2 in zip(traj, traj[1:]):
+        plot_curve(p1, p2, param=':r')
+        # plot_pose(p)
+    pass
+
+
+def fill_margin(traj, m=0.3):
+    old_traj = traj
+    new_traj = []
+    for p in traj:
+        x, y = p[:2]
+        theta = p[2]
+        dx, dy = np.cross([np.cos(theta)*m, np.sin(theta)*m, 0], [0, 0, 1])[:2]
+        x += dx
+        y += dy
+
+        rho = 1./(1./p[3] - m) if abs(p[3]) > 0.001 else p[3]
+        # print p[3], rho
+        # rho = p[3]
+        new_traj.append([x, y, theta, rho])
+    traj1 = new_traj
+
+    # for p1, p2 in zip(traj, traj[1:]):
+    #     plot_curve(p1, p2, param = ':r')
+
+    m = -m
+    new_traj = []
+    traj2 = old_traj
+    for p in traj2:
+        x, y = p[:2]
+        theta = p[2]
+        dx, dy = np.cross([np.cos(theta)*m, np.sin(theta)*m, 0], [0, 0, 1])[:2]
+        x += dx
+        y += dy
+
+        rho = 1./(1./p[3] - m) if abs(p[3]) > 0.001 else p[3]
+        # print p[3], rho
+        # rho = p[3]
+        new_traj.append([x, y, theta, rho])
+    traj2 = new_traj
+
+    for p1, p2, p3, p4 in zip(traj1, traj1[1:], traj2, traj2[1:]):
+        # plot_curve(p1, p2, param = ':r')
+        fill_curve(p1, p2, p3, p4)
+        # plot_pose(p)
+    pass
+
+
 def gen_obstacle(p, num=40):
     x, y, r = p
-    theta = np.random.rand(num)*np.pi*2
+    # theta = np.random.rand(num)*np.pi*2
+    theta = np.linspace(0, np.pi*2, num)
     xx = r*np.cos(theta)+x
     yy = r*np.sin(theta)+y
     point_cloud = np.array([xx, yy]).T
@@ -247,7 +402,7 @@ def gen_multiple_obstacle(p_list):
 
 
 def plot_pointcloud(pc):
-    plt.plot(pc[:, 0], pc[:, 1], '.k')
+    plt.plot(pc[:, 0], pc[:, 1], '.k', markersize=1)
 
 
 def test():
@@ -256,17 +411,28 @@ def test():
 
     traj = [[0, 0, np.pi/4], [1, 1, np.pi/4], [2, 2, np.pi/4],
             [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
-    traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
+    traj = [[-2, 0, 0], [0, 0, 0], [3, 0, 0],
+            [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
+    # traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
     trajectory = process_trajectory(traj)
     # plot_pose([0,0,1.])
 
     # plot_curve([0,0,np.pi/2, 1],[1,1,0.,1])
 
+    # plot_margin_trajectory(trajectory)
+    fill_margin(trajectory)
+
     plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[2, 3, 0.5], [3, 5, 0.7]])
+    pc = gen_multiple_obstacle([[4, 1.7, 0.4], [6., 6., 0.7]])
+    # pc = gen_multiple_obstacle([[4.4, 1.7, 0.4], [5.3, 6., 0.7]])
     plot_pointcloud(pc)
-    print(get_collision(pc, trajectory, 0.3))
+    print(get_collision(pc, trajectory, 0.2))
+
+    plt.axis('equal')
+
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.show()
 
 

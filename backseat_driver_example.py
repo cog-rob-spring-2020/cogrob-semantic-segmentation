@@ -68,7 +68,9 @@ def main():
         # Create the BackseatDriver
         # No need to specify hazard labels; the defaults avoid cars,
         # pedestrians, buildings, walls, and poles
-        my_backseat_driver = BackseatDriver(cam_transform, debug=True)
+        my_backseat_driver = BackseatDriver(cam_transform,
+                                            update_rate=1,
+                                            debug=True)
 
         # Register a simple "drive straight for a bit" trajectory.
         # Backseat driver will ignore waypoints with a time in the past, so

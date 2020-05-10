@@ -1,5 +1,7 @@
 import numpy as np
 
+FRONT_BACK_DISTANCE = 2.
+max_detect_range = np.inf
 # def get_rot_center(alpha):
 #     '''
 #     Calculate the rotation center of the vehicle
@@ -10,15 +12,14 @@ import numpy as np
 #     if abs(alpha) < 0.01:
 #         return None
 
-#     car_uaw = 0.04  # y component of the Front wheel in camera Frame
-#     car_aw = -0.28  # y component of the rear wheel in camera Frame
-#     fw = car_uaw
-#     bw = car_aw
+#     # car_uaw = 0.04  # y component of the Front wheel in camera Frame
+#     # car_aw = -0.28  # y component of the rear wheel in camera Frame
+#     # fw = car_uaw
+#     # bw = car_aw
 
-#     x = -(bw-fw)/np.tan(alpha)
-#     y = bw
+#     x = FRONT_BACK_DISTANCE/np.sin(alpha)
+#     y = -FRONT_BACK_DISTANCE
 #     return (x, y)
-
 
 def get_rot_center(rho):
     '''
@@ -37,7 +38,7 @@ def get_rot_center(rho):
     return (x, y)
 
 
-def get_distance(rho, obstacle, margin=0.5, noise_level=0):
+def get_distance(rho, obstacle, margin=1., noise_level=0):
     '''
     Calculate the minimum distance that the vehicle could move without collision
     Input:  rho: curvature at current state, positive is right turning, negitive is left turning
@@ -50,15 +51,22 @@ def get_distance(rho, obstacle, margin=0.5, noise_level=0):
     '''
 
     obstacle = np.array(obstacle)
-    beta = obstacle[:, 0]
-    d = obstacle[:, 1]
+    # beta = obstacle[:, 0]
+    # d = obstacle[:, 1]
+
+    xc = obstacle[:,0]
+    yc = obstacle[:,1]
 
     center = get_rot_center(rho)
     if not center:
         # The vehicle is moving forward
 
-        x = d*np.sin(beta)
-        y = d*np.cos(beta)
+        # x = d*np.sin(beta)
+        # y = d*np.cos(beta)
+
+        x = xc
+        y = yc
+
         crossing = np.where(np.abs(x) > margin, 0, 1)
         collide_indx = np.where(crossing == 1)
         if len(collide_indx[0]) == 0:
@@ -74,10 +82,14 @@ def get_distance(rho, obstacle, margin=0.5, noise_level=0):
     x0, y0 = center
     r0 = np.sqrt(x0**2+y0**2)
 
-    x = -x0+d*np.sin(beta)
-    y = -y0+d*np.cos(beta)
+    # x = -x0+d*np.sin(beta)
+    # y = -y0+d*np.cos(beta)
 
-    max_go_range = (np.pi-np.abs(np.arctan(y0/x0)))*r0
+    x = -x0 + xc
+    y = -y0 + yc
+
+    # max_go_range = (np.pi-np.abs(np.arctan(y0/x0)))*r0
+    max_go_range = np.inf
     # print 'max_go_range',max_go_range,'center',center
 
     # direction=np.sign(rho)

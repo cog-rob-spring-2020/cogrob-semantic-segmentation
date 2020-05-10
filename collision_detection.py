@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from collision.utils import *
 
@@ -9,6 +10,8 @@ def pi2pi(theta):
 def cal_curvature(p1, p2):
     '''
     calculate curvature, p1 current waypoint, p2 next waypoint
+    Input: p1, p2 way point [x, y, theta]
+    Output: curvature
     '''
     x1, y1, theta1 = p1[:3]
     x2, y2, theta2 = p2[:3]
@@ -25,7 +28,9 @@ def cal_curvature(p1, p2):
 
 def interpolate_waypoints(p1, p2):
     '''
-    calculate curvature, p1 current waypoint, p2 next waypoint
+    Interpolate waypoint if the car can't go from p1 to p2 with constant curvature, interpolate a new way point on the bisecting normal of p1 and p2
+    Input: p1, p2 way point [x, y, theta]
+    Output: List of waypoint [[x, y, theta], ...]
     '''
     new_waypoints = []
 
@@ -56,6 +61,11 @@ def interpolate_waypoints(p1, p2):
 
 
 def process_trajectory(trajectory):
+    '''
+    Calculate curvature and interpolate new waypoint
+    Input: old trajectory [[x, y, theta],...]
+    Output: new trajectory [[x, y, theta, curvature],...]
+    '''
     new_traj = [trajectory[0][:3]]
     for p1, p2 in zip(trajectory, trajectory[1:]):
         new_traj += interpolate_waypoints(p1, p2)[1:]
@@ -70,6 +80,11 @@ def process_trajectory(trajectory):
 
 
 def waypoints_distance(p1, p2):
+    '''
+    calculate the length of the curve between two way points
+    Input: p1, p2: way point [x, y, theta, rho]
+    Output: length of the curve between two way points 
+    '''
     x1, y1, theta1, rho = p1
     x2, y2, theta2, _ = p2
 
@@ -84,15 +99,18 @@ def waypoints_distance(p1, p2):
 
 
 def transformation(p, point_cloud):
-    x,y,theta = p[:3]
-    R_cw = np.array([[np.sin(theta), -np.cos(theta)],[np.cos(theta), np.sin(theta)]]).T
-    x_cw = np.array([x,y])
-    point_cloud_c = np.dot(R_cw.T, point_cloud.T-x_cw.reshape((2,1)))
+    '''
+    Transform point cloud in world frame to car frame
+    '''
+    x, y, theta = p[:3]
+    R_cw = np.array([[np.sin(theta), -np.cos(theta)],
+                     [np.cos(theta), np.sin(theta)]]).T
+    x_cw = np.array([x, y])
+    point_cloud_c = np.dot(R_cw.T, point_cloud.T-x_cw.reshape((2, 1)))
     return point_cloud_c.T
 
 
-
-def get_collision(point_cloud, trajectory, margin = 1.):
+def get_collision(point_cloud, trajectory, margin=1.):
     '''
     Interface function of collision detection
     Input:
@@ -102,22 +120,23 @@ def get_collision(point_cloud, trajectory, margin = 1.):
             y: y component of car position in world frame
             theta: orientation of car in world frame
                      when theta=0 car moving along x-axis (world frame), theta increase counterclockwise
+        margin: safety margin, do not set this value for two small, or the car can move trough the gap between two lidar point.
     Output:
         maximum distance the vehicle can go, inf if no collision has been detected
     '''
 
-    point_cloud = np.array(point_cloud)[:,:2]
+    point_cloud = np.array(point_cloud)[:, :2]
 
     trajectory = process_trajectory(trajectory)
 
     total_traveled = 0.
-    for p1,p2 in zip(trajectory,trajectory[1:]):
-        point_cloud_p = transformation(p1,point_cloud)
+    for p1, p2 in zip(trajectory, trajectory[1:]):
+        point_cloud_p = transformation(p1, point_cloud)
         d = get_distance(p1[3], point_cloud_p, margin)
 
-        wd = waypoints_distance(p1,p2)
+        wd = waypoints_distance(p1, p2)
 
-        if d<wd:
+        if d < wd:
             return total_traveled+d
         else:
             total_traveled += wd
@@ -150,31 +169,34 @@ def get_collision2(depth_image, seg_image, trajectory):
 
     pass
 
-#The following codes is only used for plotting and debugging
-import matplotlib.pyplot as plt
+
+# The following codes is only used for plotting and debugging
+
 
 def plot_pose(p):
 
-    x,y,theta = p[:3]
+    x, y, theta = p[:3]
 
-    plt.plot(x,y,'k.',markersize = 10)
+    plt.plot(x, y, 'k.', markersize=10)
 
     l = 0.3
 
     x1 = l*np.cos(theta)+x
     y1 = l*np.sin(theta)+y
 
-    plt.plot([x,x1],[y,y1],'-b')
+    plt.plot([x, x1], [y, y1], '-b')
+
 
 def plot_curve(p1, p2):
-    x1,y1,theta1, rho = p1
-    x2,y2,theta2, _ = p2
+    x1, y1, theta1, rho = p1
+    x2, y2, theta2, _ = p2
 
-    if abs(rho)<0.001:
-        plt.plot([x1,x2],[y1,y2],'-r')
+    if abs(rho) < 0.001:
+        plt.plot([x1, x2], [y1, y2], '-r')
     else:
         r = 1./rho
-        xc,yc = np.cross([np.cos(theta1),np.sin(theta1),0],[0,0,1.])[:2]*r + np.array([x1,y1])
+        xc, yc = np.cross([np.cos(theta1), np.sin(theta1), 0], [
+                          0, 0, 1.])[:2]*r + np.array([x1, y1])
         # print xc,yc
         # plt.plot(xc,yc,'o')
         # d = np.sqrt((y2-y1)**2+(x2-x1)**2)
@@ -183,36 +205,38 @@ def plot_curve(p1, p2):
         alpha1 = np.arctan2(y1-yc, x1-xc)
         alpha2 = np.arctan2(y2-yc, x2-xc)
         # print alpha1,alpha2
-        if r>0:
-            if alpha2>alpha1:
+        if r > 0:
+            if alpha2 > alpha1:
                 alpha2 -= 2*np.pi
 
-            dalpha = np.linspace (0., alpha2-alpha1, num=10)
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
         else:
-            if alpha1>alpha2:
-                alpha1-=2*np.pi
-            dalpha = np.linspace (0., alpha2-alpha1, num=10)
+            if alpha1 > alpha2:
+                alpha1 -= 2*np.pi
+            dalpha = np.linspace(0., alpha2-alpha1, num=10)
 
-        plt.plot(np.cos(alpha1+dalpha)*abs(r)+xc, np.sin(alpha1+dalpha)*abs(r)+yc, '-r')
-
+        plt.plot(np.cos(alpha1+dalpha)*abs(r)+xc,
+                 np.sin(alpha1+dalpha)*abs(r)+yc, '-r')
 
 
 def plot_trajectory(traj):
 
-    for p1,p2 in zip(traj, traj[1:]):
-        plot_curve(p1,p2)
+    for p1, p2 in zip(traj, traj[1:]):
+        plot_curve(p1, p2)
     for p in traj:
         # pass
         plot_pose(p)
     pass
 
-def gen_obstacle(p,num=40):
-    x,y,r = p
+
+def gen_obstacle(p, num=40):
+    x, y, r = p
     theta = np.random.rand(num)*np.pi*2
     xx = r*np.cos(theta)+x
     yy = r*np.sin(theta)+y
-    point_cloud = np.array([xx,yy]).T
+    point_cloud = np.array([xx, yy]).T
     return point_cloud
+
 
 def gen_multiple_obstacle(p_list):
     point_clouds = []
@@ -221,14 +245,18 @@ def gen_multiple_obstacle(p_list):
     point_clouds = np.concatenate(point_clouds)
     return point_clouds
 
+
 def plot_pointcloud(pc):
-    plt.plot(pc[:,0],pc[:,1],'.k')
+    plt.plot(pc[:, 0], pc[:, 1], '.k')
+
 
 def test():
-    
+
     plt.figure()
 
-    traj = [[0,0,np.pi/4],[1,1,np.pi/4], [2,2,np.pi/4], [3,4,np.pi/2], [5,4,np.pi/2], [5,7,np.pi/2]]
+    traj = [[0, 0, np.pi/4], [1, 1, np.pi/4], [2, 2, np.pi/4],
+            [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
+    traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
     trajectory = process_trajectory(traj)
     # plot_pose([0,0,1.])
 
@@ -236,10 +264,11 @@ def test():
 
     plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[2,3,0.5],[3,5,0.5]])
+    pc = gen_multiple_obstacle([[2, 3, 0.5], [3, 5, 0.7]])
     plot_pointcloud(pc)
-    print(get_collision(pc,trajectory,0.5))
+    print(get_collision(pc, trajectory, 0.3))
     plt.show()
+
 
 if __name__ == '__main__':
     # print(get_rot_center(3.14/6))

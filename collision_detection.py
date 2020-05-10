@@ -127,9 +127,9 @@ def get_collision(point_cloud, trajectory, margin=1.):
 
     import pickle as pkl
 
-    pickle.dump([point_cloud, trajectory] open('/home/cogrob/debug/save.p','wb'))
+    pkl.dump([point_cloud, trajectory], open('/home/cogrob/debug/save.p','wb'))
 
-    exit()
+
 
     point_cloud = np.array(point_cloud)[:, :2]
 
@@ -147,10 +147,11 @@ def get_collision(point_cloud, trajectory, margin=1.):
         wd = waypoints_distance(p1, p2)
 
         if d < wd:
+            exit()
             return total_traveled+d
         else:
             total_traveled += wd
-
+    exit()
     return np.inf
     pass
 

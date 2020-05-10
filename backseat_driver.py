@@ -116,17 +116,23 @@ class BackseatDriver:
         self.refNet = RefineNet()
         print("after init")
 
-    def log(self, message):
+    def log(self, message, emergency=False):
         '''Logs a message to the console if debug logging is enabled.
 
         @param message: the string message to print
+        @param emergency: a boolean that should be set to true to ignore
+                          current debug settings (usually we don't print unless
+                          debug is enabled. Setting this to true prints anyway)
         '''
         # Do not print if debug is not enabled.
-        if not self.debug:
+        if not (emergency or self.debug):
             return
 
         # Otherwise, add a timestamp to the message and print it
-        print("[BackseatDriver]" +
+        flag = ""
+        if emergency:
+            flag = "[ALERT]"
+        print(flag + "[BackseatDriver]" +
               time.strftime("[%a, %d %b %Y %H:%M:%S]: ", time.localtime()) +
               message)
 
@@ -287,7 +293,7 @@ class BackseatDriver:
 
         if distance_to_collision != np.inf:
             self.log(("WARNING: collision predicted! Distance remaining (m): "
-                      + str(distance_to_collision)))
+                      + str(distance_to_collision)), emergency=True)
         else:
             self.log("No collision predicted.")
 

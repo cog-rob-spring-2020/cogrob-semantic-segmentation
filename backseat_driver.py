@@ -33,7 +33,7 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
-from collision_detection import get_collision
+from collision_detection import get_collision, process_trajectory
 
 
 class BackseatDriver:
@@ -297,10 +297,12 @@ class BackseatDriver:
             # Create the sub-trajectory to pass to the collision checker
             # Currently, the collision checker only considers x, y, and theta
             sub_trajectory = self.trajectory[start_index:, 1:]
+            print(sub_trajectory.shape)
 
             # Call the collision checker on the sub_trajectory
-            distance_to_collision = get_collision(point_cloud.array,
-                                                  sub_trajectory)
+            distance_to_collision = get_collision(
+                point_cloud.array,
+                process_trajectory(sub_trajectory))
 
         if distance_to_collision != np.inf:
             self.log(("WARNING: collision predicted! Distance remaining (m): "

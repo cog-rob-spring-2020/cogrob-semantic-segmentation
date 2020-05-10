@@ -26,11 +26,11 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
+print("before torch")
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-
+print("after torch")
 import numpy as np
 
 from utils.helpers import maybe_download

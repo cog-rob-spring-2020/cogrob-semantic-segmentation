@@ -13,6 +13,14 @@ import time
 
 import numpy as np
 
+sys.path += [
+  "/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet"
+]
+print("path fixed")
+from RefineNet import RefineNet
+
+print("system imports")
+
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
         sys.version_info.major,
@@ -27,13 +35,11 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
+print("carla imports")
+
 from collision_detection import get_collision
 
-sys.path += [
-  "/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet"
-]
-from RefineNet import RefineNet
-
+print("refinenet imports")
 
 class BackseatDriver:
     '''The BackseatDriver collects semantic segmentation, depth, and
@@ -106,7 +112,9 @@ class BackseatDriver:
         self.debug = debug
 
         # Instantiate a RefineNet instance
+        print("before refine net init")
         self.refNet = RefineNet()
+        print("after init")
 
     def log(self, message):
         '''Logs a message to the console if debug logging is enabled.

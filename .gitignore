@@ -3,6 +3,7 @@ tutorial_pt_cloud
 *.pyc
 *.py~
 __pycache__
+\#*
 # Ignore all training data
 *.png
 training_data/mathcing_train_labels_copy.zip

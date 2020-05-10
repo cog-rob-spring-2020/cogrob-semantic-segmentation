@@ -369,7 +369,7 @@ def main():
     saver = Saver(args=vars(args),
                   ckpt_dir=args.snapshot_dir,
                   best_val=best_val,
-                  condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
+                  condition=lambda x, y: x >= y)  # keep checkpoint with the best validation score
 
     logger.info(" Training Process Starts")
     for task_idx in range(args.num_stages):

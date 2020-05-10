@@ -1,6 +1,8 @@
 import six
 import sys
+print("-11-")
 from models.resnet import rf_lw101, rf_lw152
+print("22")
 from utils.helpers import prepare_img
 import glob
 import os 
@@ -11,13 +13,15 @@ from PIL import Image
 
 class RefineNet: 
 	def __init__(self): 
-		self.cmap = np.load('utils/cmap.npy')
+		self.cmap = np.load('/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet/utils/cmap.npy')
+		print("-1-")
 		self.has_cuda = torch.cuda.is_available()
 		self.n_classes = 60
-
+		print("-2-")
 		self.net = rf_lw152(self.n_classes, pretrained=True).eval()
 		if self.has_cuda:
 			self.net = self.net.cuda()
+		print("-3-")
 
 	def do_segmentation(self, img):
 	    idx = 1

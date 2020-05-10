@@ -20,12 +20,12 @@ CROP_SIZE = [500] * 3
 NORMALISE_PARAMS = [1./255, # SCALE
                     np.array([0.485, 0.456, 0.406]).reshape((1, 1, 3)), # MEAN
                     np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3))] # STD
-BATCH_SIZE = [1] * 3
+BATCH_SIZE = [8] * 3
 NUM_WORKERS = 16
-NUM_CLASSES = [255] * 3
+NUM_CLASSES = [12] * 3
 LOW_SCALE = [0.5] * 3
 HIGH_SCALE = [2.0] * 3
-IGNORE_LABEL = 255
+IGNORE_LABEL = 40
 
 # ENCODER PARAMETERS
 ENC = '50'
@@ -39,7 +39,7 @@ PRINT_EVERY = 10
 RANDOM_SEED = 42
 SNAPSHOT_DIR = './ckpt/'
 CKPT_PATH = './ckpt/checkpoint.pth.tar'
-VAL_EVERY = [5] * 3 # how often to record validation scores
+VAL_EVERY = [2] * 3 # how often to record validation scores
 
 # OPTIMISERS' PARAMETERS
 LR_ENC = [5e-4, 2.5e-4, 1e-4]  # TO FREEZE, PUT 0

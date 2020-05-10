@@ -301,8 +301,8 @@ class BackseatDriver:
 
             # Call the collision checker on the sub_trajectory
             distance_to_collision = get_collision(
-                point_cloud.array,
-                sub_trajectory)
+                point_cloud.array.tolist(),
+                sub_trajectory.tolist())
 
         if distance_to_collision != np.inf:
             self.log(("WARNING: collision predicted! Distance remaining (m): "

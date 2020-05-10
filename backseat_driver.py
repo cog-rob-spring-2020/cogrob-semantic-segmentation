@@ -69,6 +69,7 @@ class BackseatDriver:
                  camera_transform,
                  hazard_labels=set([1, 4, 5, 10, 11]),
                  horizon=0.2,
+                 update_rate=10,
                  debug=False):
         '''Initializes the BackseatDriver to provide safety reports.
         Once initialized, the member function get_safety_estimate must be
@@ -91,6 +92,7 @@ class BackseatDriver:
                         for collision (in km). This saves lots of computation
                         by avoiding checking for collision with the sky.
                         Defaults to 0.2 km (200 m).
+        @param update_rate: in Hz, the frequency at which we update
         @param debug: set to True to enable debug logging.
         '''
         # Since we receive data from semantic segmentation and depth cameras
@@ -110,6 +112,11 @@ class BackseatDriver:
         self.max_depth = horizon
         # Save debug status
         self.debug = debug
+
+        # Save information for timing updates
+        self.last_update = time.time()
+        assert(update_rate > 0)
+        self.update_period = 1/update_rate
 
         # Instantiate a RefineNet instance
         print("before refine net init")
@@ -204,6 +211,11 @@ class BackseatDriver:
         @param world_snapshot: a carla.WorldSnapshot provided by the on_tick
                                callback manager.
         '''
+        # Skip if not enough time has elapsed since last update
+        if time.time() - self.last_update < self.update_period:
+            return
+
+        self.last_update = time.time()
         # We have to start by getting the most recent frame for which both
         # semantic segmentation and depth data is stored. Recall that we've
         # stored these data indexed by integer frame numbers, so we want

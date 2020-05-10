@@ -11,6 +11,6 @@ Dependencies and Installation
 This project is intended for use within the [Carla driving simulator](https://carla.org/). Please follow the instructions [here](https://carla.readthedocs.io/en/latest/) to install Carla.
 
 Additionally, our project requires the following dependencies:
-    + Numpy
-    + PIL
-    + PyTorch
+    - Numpy
+    - PIL
+    - PyTorch

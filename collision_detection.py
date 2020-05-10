@@ -147,11 +147,11 @@ def get_collision(point_cloud, trajectory, margin=1.):
         wd = waypoints_distance(p1, p2)
 
         if d < wd:
-            exit()
+            raw_input()
             return total_traveled+d
         else:
             total_traveled += wd
-    exit()
+    raw_input()
     return np.inf
     pass
 

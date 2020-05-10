@@ -27,14 +27,16 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
-from collision_detection import get_distance
+from collision_detection import get_collision
+
+# TODO: import refinenet
 
 
 class BackseatDriver:
     '''The BackseatDriver collects semantic segmentation, depth, and
     planned trajectory data at whatever rate it is published, then exposes a
     callback for querying its own estimate of the safety of planned
-    trajectories (i.e. if the planned trajectory will result in a future 
+    trajectories (i.e. if the planned trajectory will result in a future
     collision and if so, how long until that predicted collision) at a constant
     rate.
 
@@ -89,7 +91,7 @@ class BackseatDriver:
         self.semantic_data = dict()
 
         # Initialize a place to store the trajectory
-        self.trajectory = None
+        self.trajectory = np.array([])
 
         # Save the transform from the vehicle to the camera
         self.camera_transform = camera_transform
@@ -99,6 +101,9 @@ class BackseatDriver:
         self.horizon = horizon
         # Save debug status
         self.debug = debug
+
+        # Instantiate a RefineNet instance
+        self.refNet = RefineNet()
 
     def log(self, message):
         '''Logs a message to the console if debug logging is enabled.
@@ -130,17 +135,20 @@ class BackseatDriver:
         self.depth_data[depth_data.frame] = depth_data
         self.log("Received depth data for frame: " + str(depth_data.frame))
 
-    def semantic_segmentation_callback(self, semantic_data):
-        '''Receives semantic_segmentation data asynchronously and saves it.
+    def semantic_segmentation_callback(self, image_data):
+        '''Receives semantic segmentation data asynchronously and saves it.
 
-        @param semantic_data:
-            a dict containing keys `original` for the original carla.Image
-            containing an RGB picture of the road, and `segmented` containing
-            a numpy array with an integer label for each pixel.
+        @param image_data: a carla.Image object containing the RGB image.
+                              We'll run it through RefineNet and save it here.
         TODO: Confirm label encoding with Lars
         '''
+        # Convert the image to an RGB numpy array
+        rgb_image = to_rgb_array(image_data)
+        # Segment that image
+        semantic_data = self.refinenet.do_segmentation(rgb_image)
+
         # Save the depth data along with its frame
-        self.semantic_data[semantic_data['original'].frame] = semantic_data
+        self.semantic_data[image_data.frame] = semantic_data
         self.log("Received semantic data for frame: " +
                  str(semantic_data.frame))
 
@@ -152,15 +160,15 @@ class BackseatDriver:
         in the ego vehicle frame.
 
         @param trajectory: an Nx4 numpy array, where each row is (t, x, y,
-                           theta, alpha) denoting a time-indexed list of
+                           theta) denoting a time-indexed list of
                            trajectory waypoints, where
             - t is the time of the waypoint.
             - x, y, theta denotes the 2D pose of the vehicle at this waypoint,
               where (x, y, theta) = (0, 0, 0) is the current location of the
               vehicle (with the x-axis pointing along the current driving
               direction of the car).
-            - alpha is the steering angle of the car at the specified waypoint.
         '''
+        assert(trajectory.shape[1] == 4)
         self.trajectory = trajectory
         self.log("Received trajectory with " + str(len(self.trajectory)) +
                  "waypoints")
@@ -200,6 +208,7 @@ class BackseatDriver:
             return
 
         # Otherwise, we can generate the safety estimate
+        distance_to_collision = np.inf
         if matching_frame_found:
             # Get the depth and semantic data from storage, and extract a
             # timestamp and other useful metadata for this frame
@@ -220,19 +229,30 @@ class BackseatDriver:
             # At this point, we have the depth and semantic data that we
             # want to fuse into a segmented point cloud.
 
-            #   1) Convert the segmentation data to a labelled array
-            #        (this should be a width x height x rgb array of floats,
-            #         where the label of each pixel is encoded in the red
-            #         value of each pixel)
-            semantic_labels = to_rgb_array(semantic_data)
+            #   1) The semantic data is should contain an integer for each
+            #      pixel representing its class. Convert this to a RGB array
+            #      containing the label in the red channel (for interface with
+            #      the depth_to_local_point_cloud function)
+            semantic_labels = np.zeros((semantic_data.shape[0],
+                                        semantic_data.shape[1],
+                                        3))
+            semantic_labels[:, :, 0] = semantic_data
 
             #   2) Create a point cloud that contains only points
             #      that we labelled as hazards
             self.log("Making point cloud for frame " + str(frame_number))
+            # Consider the following as hazards:
+            #   1: buildings
+            #   4: pedestrians
+            #   5: poles
+            #  10: vehicles
+            #  11: walls
+            hazard_labels = set([1, 4, 5, 10, 11])
             point_cloud = depth_to_local_point_cloud(
                 depth_data,
                 semantic_labels,
-                max_depth=self.max_depth
+                max_depth=self.max_depth,
+                hazard_labels=hazard_labels
             )
 
             # We want to check the trajectory (starting at the current time)
@@ -248,42 +268,17 @@ class BackseatDriver:
                 self.log(("No trajectory waypoints left."
                           "Cannot generate safety report!"))
 
-            # Now iterate through the remaining waypoints
-            for i in range(start_index, self.trajectory.shape[0]):
-                # The collision checking code takes in one pose and a list of
-                # points in the waypoint frame, and it returns the distance
-                # until collision. However, we can consider a waypoint to be
-                # collision-free if the distance to collision is more than the
-                # distance to the next waypoint.
+            # Create the sub-trajectory to pass to the collision checker
+            # Currently, the collision checker only considers x, y, and theta
+            sub_trajectory = self.trajectory[start_index:, 1:]
 
-                # To do the collision checking, we first need to
-                # transform the point cloud into the waypoint frame
-                x = self.trajectory[i, 1]
-                y = self.trajectory[i, 2]
-                theta = self.trajectory[i, 3]
-                alpha = self.trajectory[i, 4]
-                points = point_cloud.offset_then_rotate(x, y, theta)
+            # Call the collision checker on the sub_trajectory
+            distance_to_collision = get_collision(point_cloud, sub_trajectory)
 
-                # Call Shangjie's code for collision checking
-                distance_to_collision = get_distance(alpha, points)
+        if distance_to_collision != np.inf:
+            self.log(("WARNING: collision predicted! Distance remaining (m): "
+                      + str(distance_to_collision)))
+        else:
+            self.log("No collision predicted.")
 
-                # If collision occurs before next waypoint, raise the alarm
-                if i < self.trajectory.shape[0] - 1:
-                    next_x = self.trajectory[i + 1, 1]
-                    next_y = self.trajectory[i + 1, 2]
-                    distance_to_next_waypoint = np.sqrt((next_x - x) ** 2 +
-                                                        (next_y - y) ** 2)
-
-                    if distance_to_collision < distance_to_next_waypoint:
-                        self.log("WARNING: Collision predicted. Distance: " +
-                                 str(distance_to_collision) + "from waypoint "
-                                 + str(i))
-                        break
-
-                else:  # if we're on the last waypoint, raise the alarm
-                    self.log("WARNING: Collision predicted. Distance: " +
-                             str(distance_to_collision))
-
-                #  Otherwise, continue to next waypoint.
-
-        # Nothing to return right now.
+        return distance_to_collision

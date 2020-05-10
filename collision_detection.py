@@ -127,7 +127,9 @@ def get_collision(point_cloud, trajectory, margin=1.):
 
     point_cloud = np.array(point_cloud)[:, :2]
 
+    print(trajectory)
     trajectory = process_trajectory(trajectory)
+    print(trajectory)
 
     # car_circle_center = [[0,0],[0,0.5],[0,1]]
     car_circle_center = [[0,0]]

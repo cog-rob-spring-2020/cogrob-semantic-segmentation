@@ -129,10 +129,14 @@ def get_collision(point_cloud, trajectory, margin=1.):
 
     trajectory = process_trajectory(trajectory)
 
+    # car_circle_center = [[0,0],[0,0.5],[0,1]]
+    car_circle_center = [[0,0]]
+
     total_traveled = 0.
     for p1, p2 in zip(trajectory, trajectory[1:]):
         point_cloud_p = transformation(p1, point_cloud)
-        d = get_distance(p1[3], point_cloud_p, margin)
+        d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin)
+             for cx,cy in car_circle_center])
 
         wd = waypoints_distance(p1, p2)
 

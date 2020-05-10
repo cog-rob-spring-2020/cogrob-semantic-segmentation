@@ -21,7 +21,7 @@ max_detect_range = np.inf
 #     y = -FRONT_BACK_DISTANCE
 #     return (x, y)
 
-def get_rot_center(rho):
+def get_rot_center(rho, x=0., y=0., theta = np.pi/2):
     '''
     Calculate the rotation center of the vehicle
     Input: rho is the curvature at current state, positive is right turning, negitive is left turning
@@ -30,7 +30,7 @@ def get_rot_center(rho):
     if abs(rho) < 0.01:
         return None
 
-    car_aw = -0.28
+    car_aw = 0.
     bw = car_aw  # y component of the rear wheel in camera Frame
 
     x = 1/rho

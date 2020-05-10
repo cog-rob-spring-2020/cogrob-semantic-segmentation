@@ -29,6 +29,8 @@ from image_converter import (
 
 from collision_detection import get_collision
 
+# TODO: import refinenet
+
 
 class BackseatDriver:
     '''The BackseatDriver collects semantic segmentation, depth, and
@@ -100,6 +102,9 @@ class BackseatDriver:
         # Save debug status
         self.debug = debug
 
+        # Instantiate a RefineNet instance
+        self.refNet = RefineNet()
+
     def log(self, message):
         '''Logs a message to the console if debug logging is enabled.
 
@@ -130,17 +135,20 @@ class BackseatDriver:
         self.depth_data[depth_data.frame] = depth_data
         self.log("Received depth data for frame: " + str(depth_data.frame))
 
-    def semantic_segmentation_callback(self, semantic_data):
-        '''Receives semantic_segmentation data asynchronously and saves it.
+    def semantic_segmentation_callback(self, image_data):
+        '''Receives semantic segmentation data asynchronously and saves it.
 
-        @param semantic_data:
-            a dict containing keys `original` for the original carla.Image
-            containing an RGB picture of the road, and `segmented` containing
-            a numpy array with an integer label for each pixel.
+        @param image_data: a carla.Image object containing the RGB image.
+                              We'll run it through RefineNet and save it here.
         TODO: Confirm label encoding with Lars
         '''
+        # Convert the image to an RGB numpy array
+        rgb_image = to_rgb_array(image_data)
+        # Segment that image
+        semantic_data = self.refinenet.do_segmentation(rgb_image)
+
         # Save the depth data along with its frame
-        self.semantic_data[semantic_data['original'].frame] = semantic_data
+        self.semantic_data[image_data.frame] = semantic_data
         self.log("Received semantic data for frame: " +
                  str(semantic_data.frame))
 
@@ -152,15 +160,15 @@ class BackseatDriver:
         in the ego vehicle frame.
 
         @param trajectory: an Nx4 numpy array, where each row is (t, x, y,
-                           theta, alpha) denoting a time-indexed list of
+                           theta) denoting a time-indexed list of
                            trajectory waypoints, where
             - t is the time of the waypoint.
             - x, y, theta denotes the 2D pose of the vehicle at this waypoint,
               where (x, y, theta) = (0, 0, 0) is the current location of the
               vehicle (with the x-axis pointing along the current driving
               direction of the car).
-            - alpha is the steering angle of the car at the specified waypoint.
         '''
+        assert(trajectory.shape[1] == 4)
         self.trajectory = trajectory
         self.log("Received trajectory with " + str(len(self.trajectory)) +
                  "waypoints")
@@ -221,12 +229,14 @@ class BackseatDriver:
             # At this point, we have the depth and semantic data that we
             # want to fuse into a segmented point cloud.
 
-            #   1) Convert the segmentation data to a labelled array
-            #        (this should be a width x height x rgb array of floats,
-            #         where the label of each pixel is encoded in the red
-            #         value of each pixel)
-            self.log("Have you remembered to use semantic_data properly?")
-            semantic_labels = to_rgb_array(semantic_data)
+            #   1) The semantic data is should contain an integer for each
+            #      pixel representing its class. Convert this to a RGB array
+            #      containing the label in the red channel (for interface with
+            #      the depth_to_local_point_cloud function)
+            semantic_labels = np.zeros((semantic_data.shape[0],
+                                        semantic_data.shape[1],
+                                        3))
+            semantic_labels[:, :, 0] = semantic_data
 
             #   2) Create a point cloud that contains only points
             #      that we labelled as hazards
@@ -260,7 +270,7 @@ class BackseatDriver:
 
             # Create the sub-trajectory to pass to the collision checker
             # Currently, the collision checker only considers x, y, and theta
-            sub_trajectory = self.trajectory[start_index:, 1:4]
+            sub_trajectory = self.trajectory[start_index:, 1:]
 
             # Call the collision checker on the sub_trajectory
             distance_to_collision = get_collision(point_cloud, sub_trajectory)

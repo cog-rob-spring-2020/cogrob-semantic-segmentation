@@ -328,7 +328,7 @@ def depth_to_local_point_cloud(image, color=None, max_depth=0.9,
 
         # Also delete pixels that are not marked as hazards
         if hazard_labels:
-            not_hazards = numpy.isin(color[:, :, 0],
+            not_hazards = numpy.isin(color[:, 0],
                                      hazard_labels,
                                      invert=True)
             color = numpy.delete(color, not_hazards, axis=0)

@@ -274,7 +274,7 @@ def depth_to_logarithmic_grayscale(image):
 
 def depth_to_local_point_cloud(image, color=None, max_depth=0.9,
                                sampling_rate=1,
-                               hazard_labels=set([1, 4, 5, 10, 11])):
+                               hazard_labels=[1, 4, 5, 10, 11]):
     """
     Convert an image containing CARLA encoded depth-map to a 2D array
     containing the 3D position (relative to the camera) of each pixel

@@ -67,7 +67,7 @@ class BackseatDriver:
 
     def __init__(self,
                  camera_transform,
-                 hazard_labels=set([1, 4, 5, 10, 11]),
+                 hazard_labels=[1, 4, 5, 10, 11],
                  horizon=0.2,
                  update_rate=10,
                  debug=False):
@@ -82,7 +82,7 @@ class BackseatDriver:
         @param hazard_labels: a list of integers describing semantic
                               segmentation labels to avoid hitting (e.g.
                               other cars, pedestrians). Defaults to
-                              set([1, 4, 5, 10, 11]), which avoids:
+                              [1, 4, 5, 10, 11], which avoids:
                                   1: buildings
                                   4: pedestrians
                                   5: poles
@@ -248,12 +248,15 @@ class BackseatDriver:
 
             # To save memory, now clear both storage dictionaries of any
             # frames less than the current frame number
-            for frame_to_delete in self.depth_data.keys():
-                if frame_to_delete < frame_number:
-                    self.depth_data.pop(frame_to_delete, None)
-            for frame_to_delete in self.semantic_data.keys():
-                if frame_to_delete < frame_number:
-                    self.depth_data.pop(frame_to_delete, None)
+            frames_to_delete = [key for key in self.depth_data.keys()
+                                if key < frame_number]
+            for frame in frames_to_delete:
+                self.depth_data.pop(frame, None)
+
+            frames_to_delete = [key for key in self.semantic_data.keys()
+                                if key < frame_number]
+            for frame in frames_to_delete:
+                self.depth_data.pop(frame, None)
 
             # At this point, we have the depth and semantic data that we
             # want to fuse into a segmented point cloud.
@@ -296,7 +299,7 @@ class BackseatDriver:
             sub_trajectory = self.trajectory[start_index:, 1:]
 
             # Call the collision checker on the sub_trajectory
-            distance_to_collision = get_collision(point_cloud, sub_trajectory)
+            distance_to_collision = get_collision(point_cloud.array(), sub_trajectory)
 
         if distance_to_collision != np.inf:
             self.log(("WARNING: collision predicted! Distance remaining (m): "

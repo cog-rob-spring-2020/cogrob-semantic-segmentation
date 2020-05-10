@@ -162,7 +162,7 @@ class BackseatDriver:
         # Convert the image to an RGB numpy array
         rgb_image = to_rgb_array(image_data)
         # Segment that image
-        semantic_data = self.refinenet.do_segmentation(rgb_image)
+        semantic_data = self.refNet.do_segmentation(rgb_image)
 
         # Save the depth data along with its frame
         self.semantic_data[image_data.frame] = semantic_data

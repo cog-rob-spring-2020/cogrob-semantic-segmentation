@@ -246,14 +246,9 @@ class BackseatDriver:
             # At this point, we have the depth and semantic data that we
             # want to fuse into a segmented point cloud.
 
-            #   1) The semantic data is should contain an integer for each
-            #      pixel representing its class. Convert this to a RGB array
+            #   1) The semantic data is in an RGB array
             #      containing the label in the red channel (for interface with
             #      the depth_to_local_point_cloud function)
-            semantic_labels = np.zeros((semantic_data.shape[0],
-                                        semantic_data.shape[1],
-                                        3))
-            semantic_labels[:, :, 0] = semantic_data
 
             #   2) Create a point cloud that contains only points
             #      that we labelled as hazards
@@ -266,7 +261,7 @@ class BackseatDriver:
             #  11: walls
             point_cloud = depth_to_local_point_cloud(
                 depth_data,
-                semantic_labels,
+                semantic_data,
                 max_depth=self.max_depth,
                 hazard_labels=self.hazard_labels
             )

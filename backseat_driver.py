@@ -27,7 +27,7 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
-from collision.utils import get_distance_3D_baseline
+from collision_detection import get_collision
 
 
 class BackseatDriver:
@@ -89,7 +89,7 @@ class BackseatDriver:
         self.semantic_data = dict()
 
         # Initialize a place to store the trajectory
-        self.trajectory = None
+        self.trajectory = np.array([])
 
         # Save the transform from the vehicle to the camera
         self.camera_transform = camera_transform
@@ -200,6 +200,7 @@ class BackseatDriver:
             return
 
         # Otherwise, we can generate the safety estimate
+        distance_to_collision = np.inf
         if matching_frame_found:
             # Get the depth and semantic data from storage, and extract a
             # timestamp and other useful metadata for this frame
@@ -229,10 +230,18 @@ class BackseatDriver:
             #   2) Create a point cloud that contains only points
             #      that we labelled as hazards
             self.log("Making point cloud for frame " + str(frame_number))
+            # Consider the following as hazards:
+            #   1: buildings
+            #   4: pedestrians
+            #   5: poles
+            #  10: vehicles
+            #  11: walls
+            hazard_labels = set([1, 4, 5, 10, 11])
             point_cloud = depth_to_local_point_cloud(
                 depth_data,
                 semantic_labels,
-                max_depth=self.max_depth
+                max_depth=self.max_depth,
+                hazard_labels=hazard_labels
             )
 
             # We want to check the trajectory (starting at the current time)
@@ -248,42 +257,17 @@ class BackseatDriver:
                 self.log(("No trajectory waypoints left."
                           "Cannot generate safety report!"))
 
-            # Now iterate through the remaining waypoints
-            for i in range(start_index, self.trajectory.shape[0]):
-                # The collision checking code takes in one pose and a list of
-                # points in the waypoint frame, and it returns the distance
-                # until collision. However, we can consider a waypoint to be
-                # collision-free if the distance to collision is more than the
-                # distance to the next waypoint.
+            # Create the sub-trajectory to pass to the collision checker
+            # Currently, the collision checker only considers x, y, and theta
+            sub_trajectory = self.trajectory[start_index:, 1:4]
 
-                # To do the collision checking, we first need to
-                # transform the point cloud into the waypoint frame
-                x = self.trajectory[i, 1]
-                y = self.trajectory[i, 2]
-                theta = self.trajectory[i, 3]
-                alpha = self.trajectory[i, 4]
-                points = point_cloud.offset_then_rotate(x, y, theta)
+            # Call the collision checker on the sub_trajectory
+            distance_to_collision = get_collision(point_cloud, sub_trajectory)
 
-                # Call Shangjie's code for collision checking
-                distance_to_collision = get_distance_3D_baseline(alpha, points)
+        if distance_to_collision != np.inf:
+            self.log(("WARNING: collision predicted! Distance remaining (m): "
+                      + str(distance_to_collision)))
+        else:
+            self.log("No collision predicted.")
 
-                # If collision occurs before next waypoint, raise the alarm
-                if i < self.trajectory.shape[0] - 1:
-                    next_x = self.trajectory[i + 1, 1]
-                    next_y = self.trajectory[i + 1, 2]
-                    distance_to_next_waypoint = np.sqrt((next_x - x) ** 2 +
-                                                        (next_y - y) ** 2)
-
-                    if distance_to_collision < distance_to_next_waypoint:
-                        self.log("WARNING: Collision predicted. Distance: " +
-                                 str(distance_to_collision) + "from waypoint "
-                                 + str(i))
-                        break
-
-                else:  # if we're on the last waypoint, raise the alarm
-                    self.log("WARNING: Collision predicted. Distance: " +
-                             str(distance_to_collision))
-
-                #  Otherwise, continue to next waypoint.
-
-        # Nothing to return right now.
+        return distance_to_collision

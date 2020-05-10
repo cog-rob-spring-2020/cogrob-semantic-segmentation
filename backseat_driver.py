@@ -225,6 +225,7 @@ class BackseatDriver:
             #        (this should be a width x height x rgb array of floats,
             #         where the label of each pixel is encoded in the red
             #         value of each pixel)
+            self.log("Have you remembered to use semantic_data properly?")
             semantic_labels = to_rgb_array(semantic_data)
 
             #   2) Create a point cloud that contains only points

@@ -53,6 +53,9 @@ def get_distance(rho, obstacle, margin=1., noise_level=0):
     obstacle = np.array(obstacle)
     # beta = obstacle[:, 0]
     # d = obstacle[:, 1]
+    # print obstacle
+    obstacle = obstacle[np.where(obstacle[:,1]>=0)]
+    # print obstacle
 
     xc = obstacle[:,0]
     yc = obstacle[:,1]
@@ -195,6 +198,6 @@ def get_bounding_bos(instance_list):
 
 
 if __name__ == '__main__':
-    print(get_rot_center(3.14/6))
-    obstacle = [[0., 1.], [0.8, 0.8]]
+    # print(get_rot_center(3.14/6))
+    obstacle = [[0., -1.], [0.8, 0.8]]
     print(get_distance(-1.14/6, obstacle))

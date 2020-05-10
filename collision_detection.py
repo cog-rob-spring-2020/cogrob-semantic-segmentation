@@ -125,9 +125,9 @@ def get_collision(point_cloud, trajectory, margin=1.):
         maximum distance the vehicle can go, inf if no collision has been detected
     '''
 
-    import pickle as pkl
+    # import pickle as pkl
 
-    pkl.dump([point_cloud, trajectory], open('/home/cogrob/debug/save.p','wb'))
+    # pkl.dump([point_cloud, trajectory], open('/home/cogrob/debug/save.p','wb'))
 
 
 
@@ -147,11 +147,11 @@ def get_collision(point_cloud, trajectory, margin=1.):
         wd = waypoints_distance(p1, p2)
 
         if d < wd:
-            raw_input()
+            # raw_input()
             return total_traveled+d
         else:
             total_traveled += wd
-    raw_input()
+    # raw_input()
     return np.inf
     pass
 
@@ -424,6 +424,9 @@ def test():
             [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
     traj = [[-2, 0, np.pi], [0, 0, np.pi], [3, 0, np.pi],
             [5, 5, -np.pi/2], [4.6, 7, -np.pi/2]][::1]
+
+    traj = [[-2, 0, 0.], [0, 0, 0.], [3, 0, 0.],
+            [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
     # traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
     trajectory = process_trajectory(traj)
     # plot_pose([0,0,1.])
@@ -435,7 +438,7 @@ def test():
 
     plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[4, 1.7, 0.4], [6., 6., 0.7]])
+    pc = gen_multiple_obstacle([[-4, 0, 0.4], [6., 6., 0.7]])
     # pc = gen_multiple_obstacle([[-2, 0.5, 0.4], [5.3, 6., 0.7]])
     plot_pointcloud(pc)
     print(get_collision(pc, trajectory, 0.2))

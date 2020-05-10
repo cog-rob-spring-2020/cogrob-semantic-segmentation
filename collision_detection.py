@@ -135,6 +135,7 @@ def get_collision(point_cloud, trajectory, margin=1.):
     total_traveled = 0.
     for p1, p2 in zip(trajectory, trajectory[1:]):
         point_cloud_p = transformation(p1, point_cloud)
+        print(p1)
         d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin)
              for cx,cy in car_circle_center])
 

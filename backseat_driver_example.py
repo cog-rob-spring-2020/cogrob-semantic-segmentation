@@ -2,6 +2,8 @@ import glob
 import os
 import sys
 
+import numpy as np
+
 from backseat_driver import BackseatDriver
 
 try:
@@ -41,6 +43,10 @@ def main():
     client = carla.Client(args.host, args.port)
     client.set_timeout(10.0)
 
+    # ID for world.on_tick callback. Defined here so that it will be defined
+    # during the finally block below if something goes wrong before we define
+    # it in the try block.
+    bsd_id = 0
     try:
 
         world = client.get_world()
@@ -54,7 +60,29 @@ def main():
         ego_gnss = None
         ego_imu = None
 
-        # Make the BackseatDriver
+        # Define the transform for the RGBd camera
+        cam_location = carla.Location(2, 0, 1)
+        cam_rotation = carla.Rotation(-10, 180, 0)
+        cam_transform = carla.Transform(cam_location, cam_rotation)
+
+        # Create the BackseatDriver
+        # No need to specify hazard labels; the defaults avoid cars,
+        # pedestrians, buildings, walls, and poles
+        my_backseat_driver = BackseatDriver(cam_transform)
+
+        # Register a simple "drive straight for a bit" trajectory.
+        # Backseat driver will ignore waypoints with a time in the past, so
+        # to force it to consider all waypoints, just add very large times
+        trajectory = np.array([
+            # t x y theta
+            [np.inf, 0, 0, 0],
+            [np.inf, 5, 0, 0],
+            [np.inf, 10, 0, 0],
+            [np.inf, 15, 0, 0],
+            [np.inf, 20, 0, 0],
+            [np.inf, 25, 0, 0]
+        ])
+        my_backseat_driver.update_planned_trajectory(trajectory)
 
         # --------------
         # Start recording
@@ -93,18 +121,13 @@ def main():
         cam_bp.set_attribute("image_size_x", str(1920))
         cam_bp.set_attribute("image_size_y", str(1080))
         cam_bp.set_attribute("fov", str(105))
-        cam_location = carla.Location(2, 0, 1)
-        cam_rotation = carla.Rotation(-10, 180, 0)
-        cam_transform = carla.Transform(cam_location, cam_rotation)
         ego_cam = world.spawn_actor(
             cam_bp, cam_transform, attach_to=ego_vehicle,
             attachment_type=carla.AttachmentType.SpringArm)
-        ego_cam.listen(lambda image: image.save_to_disk(
-            'tutorial_pt_cloud/output/%.6d.png' % image.frame))
-        print("rgb camera up")
 
-        # Create the object to fuse depth and segmentation data
-        pc_synth = PointCloudSynthesizer(cam_transform)
+        # Wire up the RGB camera to the backseat_driver callback
+        ego_cam.listen(my_backseat_driver.semantic_segmentation_callback)
+        print("rgb camera up")
 
         # --------------
         # Add a depth camera sensor to ego vehicle.
@@ -120,33 +143,20 @@ def main():
         ego_depth = world.spawn_actor(
             depth_bp, depth_transform, attach_to=ego_vehicle,
             attachment_type=carla.AttachmentType.SpringArm)
-        ego_depth.listen(pc_synth.depth_callback)
-        print("depth camera up")
 
-        # --------------
-        # Add a new semantic segmentation camera to my ego
-        # --------------
-        sem_cam = None
-        sem_bp = world.get_blueprint_library().find(
-            'sensor.camera.semantic_segmentation')
-        sem_bp.set_attribute("image_size_x", str(1920))
-        sem_bp.set_attribute("image_size_y", str(1080))
-        sem_bp.set_attribute("fov", str(105))
-        sem_location = carla.Location(2, 0, 1)
-        sem_rotation = carla.Rotation(-10, 180, 0)
-        sem_transform = carla.Transform(sem_location, sem_rotation)
-        sem_cam = world.spawn_actor(
-            sem_bp, sem_transform, attach_to=ego_vehicle,
-            attachment_type=carla.AttachmentType.SpringArm)
-        # This time, a color converter is applied to the image,
-        # to get the semantic segmentation view
-        sem_cam.listen(pc_synth.semantic_callback)
-        print("semantic camera up")
+        # Wire up the depth camera to the backseat_driver callback
+        ego_depth.listen(my_backseat_driver.depth_callback)
+        print("depth camera up")
 
         # --------------
         # Enable autopilot for ego vehicle
         # --------------
         ego_vehicle.set_autopilot(True)
+
+        # --------------
+        # Add the backseat driver to be called on every simulation tick
+        # --------------
+        bsd_id = world.on_tick(my_backseat_driver.get_safety_estimate)
 
         # --------------
         # Game loop. Prevents the script from finishing.
@@ -159,6 +169,7 @@ def main():
         # Stop recording and destroy actors
         # --------------
         print("Cleaning up...")
+        world.remove_on_tick(bsd_id)
         client.stop_recorder()
         if ego_vehicle is not None:
             if ego_cam is not None:

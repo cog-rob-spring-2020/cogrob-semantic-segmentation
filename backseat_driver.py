@@ -16,10 +16,8 @@ import numpy as np
 sys.path += [
   "/opt/carla/PythonAPI/carla_scripts/light-weight-refinenet"
 ]
-print("path fixed")
 from RefineNet import RefineNet
 
-print("system imports")
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -35,11 +33,8 @@ from image_converter import (
     labels_to_cityscapes_palette
 )
 
-print("carla imports")
-
 from collision_detection import get_collision
 
-print("refinenet imports")
 
 class BackseatDriver:
     '''The BackseatDriver collects semantic segmentation, depth, and
@@ -72,21 +67,26 @@ class BackseatDriver:
 
     def __init__(self,
                  camera_transform,
-                 hazard_labels,
-                 image_size,
-                 update_rate=10,
+                 hazard_labels=set([1, 4, 5, 10, 11]),
                  horizon=0.2,
                  debug=False):
-        '''Initializes the BackseatDriver to publish safety reports
-        at the specified update_rate (in Hz). Once initialized, the member
-        function start() must be called to start the asynchronous safety-
-        monitoring loop.
+        '''Initializes the BackseatDriver to provide safety reports.
+        Once initialized, the member function get_safety_estimate must be
+        called by the user to get safety estimates, and the depth_callback,
+        semantic_segmentation_callback, and update_planned_trajectory callbacks
+        must be called to provide the BackseatDriver with the requisite data.
 
         @param camera_transform: the carla.Transform representing the
                                  pose of the camera in the ego vehicle frame.
         @param hazard_labels: a list of integers describing semantic
                               segmentation labels to avoid hitting (e.g.
-                              other cars, pedestrians).
+                              other cars, pedestrians). Defaults to
+                              set([1, 4, 5, 10, 11]), which avoids:
+                                  1: buildings
+                                  4: pedestrians
+                                  5: poles
+                                 10: vehicles
+                                 11: walls
         @param horizon: the maximum distance from the camera that will checked
                         for collision (in km). This saves lots of computation
                         by avoiding checking for collision with the sky.
@@ -258,12 +258,11 @@ class BackseatDriver:
             #   5: poles
             #  10: vehicles
             #  11: walls
-            hazard_labels = set([1, 4, 5, 10, 11])
             point_cloud = depth_to_local_point_cloud(
                 depth_data,
                 semantic_labels,
                 max_depth=self.max_depth,
-                hazard_labels=hazard_labels
+                hazard_labels=self.hazard_labels
             )
 
             # We want to check the trajectory (starting at the current time)

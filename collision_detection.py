@@ -1,6 +1,6 @@
 import numpy as np
 from collision.utils import *
-import matplotlib.pyplot as plt
+
 
 def pi2pi(theta):
     return (theta+np.pi) % np.pi-np.pi
@@ -150,6 +150,9 @@ def get_collision2(depth_image, seg_image, trajectory):
 
     pass
 
+#The following codes is only used for plotting and debugging
+import matplotlib.pyplot as plt
+
 def plot_pose(p):
 
     x,y,theta = p[:3]
@@ -223,7 +226,6 @@ def plot_pointcloud(pc):
 
 def test():
     
-
     plt.figure()
 
     traj = [[0,0,np.pi/4],[1,1,np.pi/4], [2,2,np.pi/4], [3,4,np.pi/2], [5,4,np.pi/2], [5,7,np.pi/2]]
@@ -236,7 +238,7 @@ def test():
 
     pc = gen_multiple_obstacle([[2,3,0.5],[3,5,0.5]])
     plot_pointcloud(pc)
-    print get_collision(pc,trajectory,0.5)
+    print(get_collision(pc,trajectory,0.5))
     plt.show()
 
 if __name__ == '__main__':

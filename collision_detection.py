@@ -110,7 +110,7 @@ def transformation(p, point_cloud):
     return point_cloud_c.T
 
 
-def get_collision(point_cloud, trajectory, margin=1.):
+def get_collision(point_cloud, trajectory, margin=1., noise_level=3):
     '''
     Interface function of collision detection
     Input:
@@ -125,6 +125,12 @@ def get_collision(point_cloud, trajectory, margin=1.):
         maximum distance the vehicle can go, inf if no collision has been detected
     '''
 
+    # import pickle as pkl
+
+    # pkl.dump([point_cloud, trajectory], open('/home/cogrob/debug/save.p','wb'))
+
+
+
     point_cloud = np.array(point_cloud)[:, :2]
 
     trajectory = process_trajectory(trajectory)
@@ -135,16 +141,17 @@ def get_collision(point_cloud, trajectory, margin=1.):
     total_traveled = 0.
     for p1, p2 in zip(trajectory, trajectory[1:]):
         point_cloud_p = transformation(p1, point_cloud)
-        d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin)
+        d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin, noise_level)
              for cx,cy in car_circle_center])
 
         wd = waypoints_distance(p1, p2)
 
         if d < wd:
+            # raw_input()
             return total_traveled+d
         else:
             total_traveled += wd
-
+    # raw_input()
     return np.inf
     pass
 
@@ -415,7 +422,10 @@ def test():
 
     traj = [[0, 0, np.pi/4], [1, 1, np.pi/4], [2, 2, np.pi/4],
             [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
-    traj = [[-2, 0, 0], [0, 0, 0], [3, 0, 0],
+    traj = [[-2, 0, np.pi], [0, 0, np.pi], [3, 0, np.pi],
+            [5, 5, -np.pi/2], [4.6, 7, -np.pi/2]][::1]
+
+    traj = [[-2, 0, 0.], [0, 0, 0.], [3, 0, 0.],
             [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
     # traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
     trajectory = process_trajectory(traj)
@@ -428,8 +438,8 @@ def test():
 
     plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[4, 1.7, 0.4], [6., 6., 0.7]])
-    # pc = gen_multiple_obstacle([[4.4, 1.7, 0.4], [5.3, 6., 0.7]])
+    pc = gen_multiple_obstacle([[-4, 0, 0.4], [6., 6., 0.7]])
+    # pc = gen_multiple_obstacle([[-2, 0.5, 0.4], [5.3, 6., 0.7]])
     plot_pointcloud(pc)
     print(get_collision(pc, trajectory, 0.2))
 

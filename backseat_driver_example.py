@@ -115,13 +115,13 @@ def main():
         else:
             logging.warning('Could not found any spawn points')
 
-        # --------------
+
         # Add a RGB camera sensor to ego vehicle.
         # --------------
         cam_bp = None
         cam_bp = world.get_blueprint_library().find('sensor.camera.rgb')
-        cam_bp.set_attribute("image_size_x", str(1920))
-        cam_bp.set_attribute("image_size_y", str(1080))
+        cam_bp.set_attribute("image_size_x", str(640))
+        cam_bp.set_attribute("image_size_y", str(480))
         cam_bp.set_attribute("fov", str(105))
         ego_cam = world.spawn_actor(
             cam_bp, cam_transform, attach_to=ego_vehicle,
@@ -136,8 +136,8 @@ def main():
         # --------------
         depth_bp = None
         depth_bp = world.get_blueprint_library().find('sensor.camera.depth')
-        depth_bp.set_attribute("image_size_x", str(1920))
-        depth_bp.set_attribute("image_size_y", str(1080))
+        depth_bp.set_attribute("image_size_x", str(640))
+        depth_bp.set_attribute("image_size_y", str(480))
         depth_bp.set_attribute("fov", str(105))
         depth_location = carla.Location(2, 0, 1)
         depth_rotation = carla.Rotation(-10, 180, 0)
@@ -160,11 +160,15 @@ def main():
         # --------------
         bsd_id = world.on_tick(my_backseat_driver.get_safety_estimate)
 
+        spectator = world.get_spectator()
+
         # --------------
         # Game loop. Prevents the script from finishing.
         # --------------
         while True:
             world_snapshot = world.wait_for_tick()
+            transform = ego_vehicle.get_transform()
+            spectator.set_transform(carla.Transform(transform.location + carla.Location(z=2), transform.rotation))
 
     finally:
         # --------------

@@ -11,6 +11,9 @@ import sys
 import copy
 import time
 
+from PIL import Image
+import csv
+
 import numpy as np
 
 sys.path += [
@@ -167,10 +170,14 @@ class BackseatDriver:
         TODO: Confirm label encoding with Lars
         '''
         # Convert the image to an RGB numpy array
+        image_data.save_to_disk('presentation/rgb/%.6d.png' % image_data.frame)
+
         rgb_image = to_rgb_array(image_data)
         # Segment that image
         semantic_data = self.refNet.do_segmentation(rgb_image)
-
+        print(semantic_data)
+        im = Image.fromarray(semantic_data)
+        im.save('presentation/ss/%.6d.png' % image_data.frame)
         # Save the depth data along with its frame
         self.semantic_data[image_data.frame] = semantic_data
         self.log("Received semantic data for frame: " +
@@ -280,7 +287,7 @@ class BackseatDriver:
                 max_depth=self.max_depth,
                 hazard_labels=self.hazard_labels
             )
-
+            # point_cloud.save_to_disk('presentation/rgb/%.6d.png' % frame_number)
             # We want to check the trajectory (starting at the current time)
             # for collision. Skip if no waypoints left
             # Iterate through the rows of self.trajectory to find the first
@@ -309,5 +316,9 @@ class BackseatDriver:
                       + str(distance_to_collision)), emergency=True)
         else:
             self.log("No collision predicted.")
+
+        with open('distances.csv', 'a', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow([frame_number, distance_to_collision])
 
         return distance_to_collision

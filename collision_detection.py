@@ -3,8 +3,7 @@ import numpy as np
 from collision.utils import *
 
 
-def pi2pi(theta):
-    return (theta+np.pi) % np.pi-np.pi
+
 
 
 def cal_curvature(p1, p2):
@@ -17,8 +16,8 @@ def cal_curvature(p1, p2):
     x2, y2, theta2 = p2[:3]
 
     theta0 = np.arctan2(y2-y1, x2-x1)
-    gamma1 = theta1 - theta0
-    gamma2 = theta0 - theta2
+    gamma1 = pi2pi(theta1 - theta0)
+    gamma2 = pi2pi(theta0 - theta2)
 
     d = np.sqrt((y2-y1)**2+(x2-x1)**2)
 
@@ -38,8 +37,11 @@ def interpolate_waypoints(p1, p2):
     x2, y2, theta2 = p2[:3]
 
     theta0 = np.arctan2(y2-y1, x2-x1)
-    gamma1 = theta1 - theta0
-    gamma2 = theta0 - theta2
+    gamma1 = pi2pi(theta1 - theta0)
+    gamma2 = pi2pi(theta0 - theta2)
+
+    #print p1,p2
+    #print 'tg1g2', theta0, gamma1, gamma2
 
     if gamma1 == gamma2:
         return [[x1, y1, theta1], [x2, y2, theta2]]
@@ -66,6 +68,9 @@ def process_trajectory(trajectory):
     Input: old trajectory [[x, y, theta],...]
     Output: new trajectory [[x, y, theta, curvature],...]
     '''
+    # print trajectory
+    for t in trajectory:
+        t[2] = pi2pi(t[2])
     new_traj = [trajectory[0][:3]]
     for p1, p2 in zip(trajectory, trajectory[1:]):
         new_traj += interpolate_waypoints(p1, p2)[1:]
@@ -141,12 +146,19 @@ def get_collision(point_cloud, trajectory, margin=1., noise_level=3):
     total_traveled = 0.
     for p1, p2 in zip(trajectory, trajectory[1:]):
         point_cloud_p = transformation(p1, point_cloud)
+
+        # plt.figure()
+        # plt.plot(point_cloud_p[:,0],point_cloud_p[:,1])
+        # plt.show()
+        # print p1
         d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin, noise_level)
              for cx,cy in car_circle_center])
 
         wd = waypoints_distance(p1, p2)
 
         if d < wd:
+            # raw_input()
+            # print d,'d'
             # raw_input()
             return total_traveled+d
         else:
@@ -304,7 +316,8 @@ def fill_curve(p1, p2, p3, p4):
 def plot_trajectory(traj):
 
     for p1, p2 in zip(traj, traj[1:]):
-        plot_curve(p1, p2)
+        # plot_curve(p1, p2)
+        pass
     for p in traj:
         # pass
         plot_pose(p)
@@ -422,26 +435,34 @@ def test():
 
     traj = [[0, 0, np.pi/4], [1, 1, np.pi/4], [2, 2, np.pi/4],
             [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
-    traj = [[-2, 0, np.pi], [0, 0, np.pi], [3, 0, np.pi],
-            [5, 5, -np.pi/2], [4.6, 7, -np.pi/2]][::1]
-
-    traj = [[-2, 0, 0.], [0, 0, 0.], [3, 0, 0.],
+    # traj  [[-2, 0, np.pi], [0, 0, np.pi], [3, 0, np.pi-0.01],
+            # [5, 5, -np.pi/2], [4.6, 7, -np.pi/2]]
+    traj = [[-2, 0, 0], [0, 0, 0], [3, 0, 0],
             [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
+    # traj = [[0,0,0], [1,2,np.pi/2], [0,4,np.pi], [-1,2,-np.pi/2], [0,0,0]]
+    # traj = [[0,0,np.pi], [-2,1,np.pi/2], [0,2,0], [2,1,-np.pi/2], [0,0,np.pi]]
+    # print traj
+    # traj = [[-2, 0, 0.], [0, 0, 0.], [3, 0, 0.],
+            # [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
     # traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
     trajectory = process_trajectory(traj)
+
+    for p1,p2 in zip(trajectory, trajectory[1:]):
+        #print(waypoints_distance(p1,p2))
+        pass
     # plot_pose([0,0,1.])
 
     # plot_curve([0,0,np.pi/2, 1],[1,1,0.,1])
 
     # plot_margin_trajectory(trajectory)
-    fill_margin(trajectory)
+    # fill_margin(trajectory)
 
     plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[-4, 0, 0.4], [6., 6., 0.7]])
+    pc = gen_multiple_obstacle([[2.3, 0, 0.4], [6., 6., 0.7]])
     # pc = gen_multiple_obstacle([[-2, 0.5, 0.4], [5.3, 6., 0.7]])
     plot_pointcloud(pc)
-    print(get_collision(pc, trajectory, 0.2))
+    print(get_collision(pc, trajectory, 1.))
 
     plt.axis('equal')
 
@@ -449,9 +470,30 @@ def test():
     plt.ylabel('y')
     plt.show()
 
+def test2():
+    
+    p1 = [2, -1, np.pi/2]
+
+    p2 = [0, 0, np.pi+0.01]
+
+    r= interpolate_waypoints(p1,p2)
+
+    plt.figure()
+
+    for p in r:
+        plot_pose(p)
+
+    plt.show()
+
+
+
 
 if __name__ == '__main__':
     # print(get_rot_center(3.14/6))
     # obstacle = [[0., 1.], [0.8, 0.8]]
     # print(get_distance(-1.14/6, obstacle))
     test()
+    # test2()
+    # print(pi2pi(np.pi-0.01))
+
+    # print(pi2pi(np.pi))

@@ -21,6 +21,9 @@ max_detect_range = np.inf
 #     y = -FRONT_BACK_DISTANCE
 #     return (x, y)
 
+def pi2pi(theta):
+    return (theta+np.pi) % (2*np.pi)-np.pi
+
 def get_rot_center(rho, x=0., y=0., theta = np.pi/2):
     '''
     Calculate the rotation center of the vehicle
@@ -33,7 +36,7 @@ def get_rot_center(rho, x=0., y=0., theta = np.pi/2):
     car_aw = 0.
     bw = car_aw  # y component of the rear wheel in camera Frame
 
-    x = 1/rho
+    x = 1./rho
     y = bw
     return (x, y)
 
@@ -54,6 +57,12 @@ def get_distance(rho, obstacle, margin=1., noise_level=0):
     # beta = obstacle[:, 0]
     # d = obstacle[:, 1]
     # print obstacle
+
+    # print min(np.sqrt(obstacle[:,1]**2+obstacle[:,0]**2))
+
+    if min(np.sqrt(obstacle[:,1]**2+obstacle[:,0]**2))<=margin:
+        return 0.
+
     obstacle = obstacle[np.where(obstacle[:,1]>=0)]
     # print obstacle
 
@@ -61,6 +70,7 @@ def get_distance(rho, obstacle, margin=1., noise_level=0):
     yc = obstacle[:,1]
 
     center = get_rot_center(rho)
+    # print center
     if not center:
         # The vehicle is moving forward
 
@@ -118,8 +128,11 @@ def get_distance(rho, obstacle, margin=1., noise_level=0):
         dtheta = np.arccos(cos_dtheta)
 
         theta_crossing = theta_robot-dtheta
+        # print theta_crossing,'tc'
+        # print theta_obstacle,'tb'
 
         distance = (theta_crossing-theta_obstacle)*r0
+        distance[np.where(distance<0)] += r0*np.pi
     else:
         # The vehicle is turning left
 
@@ -144,8 +157,10 @@ def get_distance(rho, obstacle, margin=1., noise_level=0):
         theta_crossing = theta_robot+dtheta
 
         distance = -(theta_crossing-theta_obstacle)*r0
+        distance[np.where(distance<0)] += r0*np.pi
 
     # distance to all lidar points
+    # print obstacle[collide_indx]
     distance_list = sorted(distance[collide_indx])
     # return the minimum
     return min(distance_list[min(noise_level, len(distance_list)-1)], max_go_range)
@@ -199,5 +214,14 @@ def get_bounding_bos(instance_list):
 
 if __name__ == '__main__':
     # print(get_rot_center(3.14/6))
-    obstacle = [[0., -1.], [0.8, 0.8]]
-    print(get_distance(-1.14/6, obstacle))
+    # obstacle = [[0., -1.], [0.8, 0.8]]
+    obstacle = [[ 2.32682892e-16,  1.90000000e+00],
+    [ 3.21866275e-02,  2.69870292e+00],
+                [-3.21866275e-02,  2.69870292e+00],
+                [-9.57262657e-02,  2.68837673e+00],
+                [-1.56786644e-01,  2.66799178e+00],
+                [-2.13786330e-01,  2.63807603e+00],
+                [ 2.32682892e-16 , 1.90000000e+00],
+                [-2.65249063e-01,  2.59940430e+00]]
+    # obstacle = [[0,2]]
+    print(get_distance(0.1, obstacle))

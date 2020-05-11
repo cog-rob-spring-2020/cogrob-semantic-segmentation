@@ -110,7 +110,7 @@ def transformation(p, point_cloud):
     return point_cloud_c.T
 
 
-def get_collision(point_cloud, trajectory, margin=1.):
+def get_collision(point_cloud, trajectory, margin=1., noise_level=3):
     '''
     Interface function of collision detection
     Input:
@@ -141,7 +141,7 @@ def get_collision(point_cloud, trajectory, margin=1.):
     total_traveled = 0.
     for p1, p2 in zip(trajectory, trajectory[1:]):
         point_cloud_p = transformation(p1, point_cloud)
-        d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin)
+        d = min([get_distance(p1[3], point_cloud_p - np.array([cx,cy]).reshape((-1,2)), margin, noise_level)
              for cx,cy in car_circle_center])
 
         wd = waypoints_distance(p1, p2)

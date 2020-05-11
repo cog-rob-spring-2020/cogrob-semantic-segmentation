@@ -196,7 +196,7 @@ def get_collision2(depth_image, seg_image, trajectory):
 # The following codes is only used for plotting and debugging
 
 
-def plot_pose(p, l=0.3):
+def plot_pose(p, l=1.):
 
     x, y, theta = p[:3]
 
@@ -316,7 +316,7 @@ def fill_curve(p1, p2, p3, p4):
 def plot_trajectory(traj):
 
     for p1, p2 in zip(traj, traj[1:]):
-        # plot_curve(p1, p2)
+        plot_curve(p1, p2)
         pass
     for p in traj:
         # pass
@@ -365,7 +365,7 @@ def plot_margin_trajectory(traj, m=0.3):
     pass
 
 
-def fill_margin(traj, m=0.3):
+def fill_margin(traj, m=1.):
     old_traj = traj
     new_traj = []
     for p in traj:
@@ -406,6 +406,16 @@ def fill_margin(traj, m=0.3):
         # plot_pose(p)
     pass
 
+def shift_traj(traj,d):
+    new_traj = []
+    for p in traj:
+        x,y,theta = p[:3]
+        x += np.cos(theta)*d
+        y += np.sin(theta)*d
+        # theta += pi2pi(-np.arctan(d*rho)) if abs(rho)>0.01 else rho
+        # rho = 1./np.sqrt(1./rho**2+d**2)*np.sign(rho) if abs(rho)>0.01 else rho
+        new_traj.append([x,y,theta])
+    return new_traj
 
 def gen_obstacle(p, num=40):
     x, y, r = p
@@ -437,14 +447,15 @@ def test():
             [3, 4, np.pi/2], [5, 4, np.pi/2], [5, 7, np.pi/2]]
     # traj  [[-2, 0, np.pi], [0, 0, np.pi], [3, 0, np.pi-0.01],
             # [5, 5, -np.pi/2], [4.6, 7, -np.pi/2]]
-    traj = [[-2, 0, 0], [0, 0, 0], [3, 0, 0],
-            [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
+    traj = [[-2, 0, 0],  [10, 0, 0],
+            [15, 5, np.pi/2], [15, 17, np.pi/2]]
     # traj = [[0,0,0], [1,2,np.pi/2], [0,4,np.pi], [-1,2,-np.pi/2], [0,0,0]]
     # traj = [[0,0,np.pi], [-2,1,np.pi/2], [0,2,0], [2,1,-np.pi/2], [0,0,np.pi]]
     # print traj
     # traj = [[-2, 0, 0.], [0, 0, 0.], [3, 0, 0.],
             # [5, 5, np.pi/2], [4.6, 7, np.pi/2]]
     # traj = [[0, 0, np.pi/4], [3, 3, np.pi/4]]
+    t2 = shift_traj(traj, 0.6)
     trajectory = process_trajectory(traj)
 
     for p1,p2 in zip(trajectory, trajectory[1:]):
@@ -455,11 +466,18 @@ def test():
     # plot_curve([0,0,np.pi/2, 1],[1,1,0.,1])
 
     # plot_margin_trajectory(trajectory)
-    # fill_margin(trajectory)
+    
+    fill_margin(trajectory)
+    t2 = shift_traj(trajectory, 2)
+    # fill_margin(t2)
+    t2 = process_trajectory(t2)
+    fill_margin(t2)
 
-    plot_trajectory(trajectory)
 
-    pc = gen_multiple_obstacle([[2.3, 0, 0.4], [6., 6., 0.7]])
+    # plot_trajectory(trajectory)
+    plot_trajectory(t2)
+
+    pc = gen_multiple_obstacle([[11, 2.5, 0.7], [17, 15., 0.7]])
     # pc = gen_multiple_obstacle([[-2, 0.5, 0.4], [5.3, 6., 0.7]])
     plot_pointcloud(pc)
     print(get_collision(pc, trajectory, 1.))

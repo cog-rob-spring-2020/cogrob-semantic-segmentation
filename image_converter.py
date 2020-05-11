@@ -340,8 +340,14 @@ def depth_to_local_point_cloud(image, color=None, max_depth=0.9,
     p2d = numpy.array([u_coord, v_coord, numpy.ones_like(u_coord)])
 
     # P = [X,Y,Z]
-    p3d = numpy.dot(numpy.linalg.inv(k), p2d)
-    p3d *= normalized_depth * far
+    p3d_tmp = numpy.dot(numpy.linalg.inv(k), p2d)
+    p3d_tmp *= normalized_depth * far
+
+    # Convert to coordinates we want
+    p3d = numpy.copy(p3d_tmp)
+    p3d[0, :] = p3d_tmp[2, :]
+    p3d[1, :] = -1 * p3d_tmp[0, :]
+    p3d[2, :] = -1 * p3d_tmp[1, :]
 
     # Formating the output to:
     # [[X1,Y1,Z1,R1,G1,B1],[X2,Y2,Z2,R2,G2,B2], ... [Xn,Yn,Zn,Rn,Gn,Bn]]
